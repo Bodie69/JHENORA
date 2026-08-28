@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/module_stats"
+        android:icon="@drawable/ic_home"
+        android:title="Stats" />
+    <item
+        android:id="@+id/module_approvals"
+        android:icon="@drawable/bg_status_pending"
+        android:title="Approvals" />
+    <item
+        android:id="@+id/module_users"
+        android:icon="@drawable/ic_profile"
+        android:title="Users" />
+    <item
+        android:id="@+id/module_orgs"
+        android:icon="@drawable/bg_avatar"
+        android:title="Orgs" />
+    <item
+        android:id="@+id/module_bulletin"
+        android:icon="@drawable/ic_announcements"
+        android:title="Bulletin" />
+    <item
+        android:id="@+id/module_events"
+        android:icon="@drawable/ic_calendar"
+        android:title="Events" />
+    <item
+        android:id="@+id/module_depts"
+        android:icon="@drawable/ic_events"
+        android:title="Depts" />
+</menu>

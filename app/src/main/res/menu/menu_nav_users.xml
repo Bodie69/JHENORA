@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/module_users"
+        android:icon="@drawable/ic_profile"
+        android:title="User Management" />
+    <item
+        android:id="@+id/module_orgs"
+        android:icon="@drawable/bg_avatar"
+        android:title="Organizations" />
+    <item
+        android:id="@+id/module_depts"
+        android:icon="@drawable/ic_events"
+        android:title="Departments" />
+</menu>

@@ -1,0 +1,64 @@
+# Task Management
+
+- [x] Exploring Project and Identifying "Sloppy Design"
+- [x] Create Implementation Plan
+- [x] Implement Changes
+    - [x] Base Components
+        - [x] Refactor `BaseActivity`
+        - [x] Refactor `BaseFragment`
+        - [x] Create `BaseRepository`
+    - [x] Repository Refactoring
+        - [x] `UserRepository`
+        - [x] `AnnouncementRepository`
+        - [x] `EventRepository`
+        - [x] `OrganizationRepository`
+        - [x] `ImageStorageRepository`
+    - [x] Activity Refactoring
+        - [x] `MainActivity`
+        - [x] `AdminDashboardActivity`
+        - [x] `LoginActivity`
+    - [x] Fragment Refactoring
+        - [x] `HomeFragment`
+        - [x] `EventFragment`
+        - [x] `AnnouncementFragment`
+        - [x] `CalendarFragment`
+        - [x] `ProfileFragment`
+        - [x] `AdminHomeFragment`
+- [x] Verify Changes
+    - [x] Gradle Build
+    - [x] Manual check of logic
+- [x] Fix Register Form Text Overflow
+    - [x] Refactor `activity_register.xml` to use flexible heights
+    - [x] Refactor `activity_login.xml` for consistency
+    - [x] Verify build
+- [x] Finalize Database Schema
+    - [x] Update `schema.sql` with new columns and seeds
+    - [x] Align `Department.java` model
+    - [x] Align `Event.java` model
+    - [x] Verify build
+- [x] Bypass Supabase Auth for Registration
+    - [x] Add password column to `schema.sql` and disable RLS
+    - [x] Add password field to `User.java`
+    - [x] Refactor `UserRepository.java` for table-based auth
+    - [x] Update `SessionManager.java` for local session
+    - [x] Delete `PendingRegistrationStore.java`
+    - [x] Verify build
+- [x] Auto-Request Notification Permission
+    - [x] Add `requestPermission` to `NotificationHelper.java`
+    - [x] Update `SplashActivity.java` to prompt on start
+    - [x] Refactor `MainActivity` and `AdminDashboardActivity`
+    - [x] Verify build
+- [x] Implement New Post Notifications
+    - [x] Update `Event.java` with `updatedAt`
+    - [x] Update `schema.sql` with `updated_at` column
+    - [x] Add status notification methods to `NotificationHelper.java`
+    - [x] Enhance `SyncWorker.java` logic for polling and author alerts
+    - [x] Update repositories to set `updated_at` on review
+    - [x] Verify build
+- [x] Implement Profile Editing
+    - [x] Create `activity_edit_profile.xml` layout
+    - [x] Create `EditProfileActivity.java` with role-specific logic
+    - [x] Update `ProfileFragment` with Edit button and auto-refresh
+    - [x] Register Activity in Manifest
+    - [x] Add `updated_at` tracking for users
+    - [x] Verify build
