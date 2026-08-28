@@ -217,16 +217,15 @@ public class UserRepository extends BaseRepository {
                     listener.onError("No account found with this email");
                     return;
                 }
-                authApi.recover(new EmailRequest(sanitizedEmail)).enqueue(new Callback<Void>() {
+                enqueue(authApi.recover(new EmailRequest(sanitizedEmail)), new OnResult<Void>() {
                     @Override
-                    public void onResponse(Call<Void> call, Response<Void> response) {
-                        if (response.isSuccessful()) listener.onSuccess();
-                        else listener.onError("Failed to send verification code");
+                    public void onSuccess(Void body) {
+                        listener.onSuccess();
                     }
 
                     @Override
-                    public void onFailure(Call<Void> call, Throwable t) {
-                        listener.onError(t.getMessage());
+                    public void onError(String message) {
+                        listener.onError("Failed to send verification code");
                     }
                 });
             }
@@ -241,14 +240,13 @@ public class UserRepository extends BaseRepository {
     public void verifyPasswordResetOtp(String email, String otp, OnCompleteListener listener) {
         String sanitizedEmail = InputSanitizer.sanitizeEmail(email);
         VerifyOtpRequest req = new VerifyOtpRequest(sanitizedEmail, otp.trim());
-        authApi.verifyOtp(req).enqueue(new Callback<AuthResponse>() {
+        enqueue(authApi.verifyOtp(req), new OnResult<AuthResponse>() {
             @Override
-            public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
-                if (!response.isSuccessful() || response.body() == null || !response.body().isSuccess()) {
+            public void onSuccess(AuthResponse auth) {
+                if (auth == null || !auth.isSuccess()) {
                     listener.onError("Invalid or expired code");
                     return;
                 }
-                AuthResponse auth = response.body();
                 // Temporary recovery session; used only to authorize the password update below,
                 // then cleared in resetPassword() so it never becomes a real logged-in session.
                 session.saveTokens(auth.accessToken, auth.refreshToken);
@@ -256,28 +254,24 @@ public class UserRepository extends BaseRepository {
             }
 
             @Override
-            public void onFailure(Call<AuthResponse> call, Throwable t) {
-                listener.onError(t.getMessage());
+            public void onError(String message) {
+                listener.onError("Invalid or expired code");
             }
         });
     }
 
     public void resetPassword(String email, String newPassword, OnCompleteListener listener) {
-        authApi.updateUser(new UpdatePasswordRequest(newPassword)).enqueue(new Callback<SupabaseUser>() {
+        enqueue(authApi.updateUser(new UpdatePasswordRequest(newPassword)), new OnResult<SupabaseUser>() {
             @Override
-            public void onResponse(Call<SupabaseUser> call, Response<SupabaseUser> response) {
+            public void onSuccess(SupabaseUser body) {
                 session.clearSession();
-                if (response.isSuccessful()) {
-                    listener.onSuccess();
-                } else {
-                    listener.onError("Failed to reset password");
-                }
+                listener.onSuccess();
             }
 
             @Override
-            public void onFailure(Call<SupabaseUser> call, Throwable t) {
+            public void onError(String message) {
                 session.clearSession();
-                listener.onError(t.getMessage());
+                listener.onError("Failed to reset password");
             }
         });
     }
@@ -375,16 +369,15 @@ public class UserRepository extends BaseRepository {
     }
 
     public void updateUserFields(Map<String, String> filter, Map<String, Object> fields, OnCompleteListener listener) {
-        dataApi.patchUser(filter, fields, "return=minimal").enqueue(new Callback<Void>() {
+        enqueue(dataApi.patchUser(filter, fields, "return=minimal"), new OnResult<Void>() {
             @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
-                if (response.isSuccessful()) listener.onSuccess();
-                else listener.onError("Update failed");
+            public void onSuccess(Void body) {
+                listener.onSuccess();
             }
 
             @Override
-            public void onFailure(Call<Void> call, Throwable t) {
-                listener.onError(t.getMessage());
+            public void onError(String message) {
+                listener.onError("Update failed");
             }
         });
     }
@@ -392,14 +385,14 @@ public class UserRepository extends BaseRepository {
     // --- Admin: Fetch all users ---
 
     public void fetchAllUsers(MutableLiveData<List<User>> liveData) {
-        dataApi.getUsers(new HashMap<>()).enqueue(new Callback<List<User>>() {
+        enqueue(dataApi.getUsers(new HashMap<>()), new OnResult<List<User>>() {
             @Override
-            public void onResponse(Call<List<User>> call, Response<List<User>> response) {
-                liveData.postValue(response.isSuccessful() ? response.body() : null);
+            public void onSuccess(List<User> body) {
+                liveData.postValue(body);
             }
 
             @Override
-            public void onFailure(Call<List<User>> call, Throwable t) {
+            public void onError(String message) {
                 liveData.postValue(null);
             }
         });
@@ -408,14 +401,14 @@ public class UserRepository extends BaseRepository {
     public void fetchPendingUsers(MutableLiveData<List<User>> liveData) {
         Map<String, String> filter = new HashMap<>();
         filter.put("status", "eq." + User.STATUS_PENDING);
-        dataApi.getUsers(filter).enqueue(new Callback<List<User>>() {
+        enqueue(dataApi.getUsers(filter), new OnResult<List<User>>() {
             @Override
-            public void onResponse(Call<List<User>> call, Response<List<User>> response) {
-                liveData.postValue(response.isSuccessful() ? response.body() : null);
+            public void onSuccess(List<User> body) {
+                liveData.postValue(body);
             }
 
             @Override
-            public void onFailure(Call<List<User>> call, Throwable t) {
+            public void onError(String message) {
                 liveData.postValue(null);
             }
         });

@@ -4,20 +4,14 @@ import android.content.Context;
 
 import androidx.lifecycle.MutableLiveData;
 
-import com.campus.campusmate.api.SupabaseApi;
 import com.campus.campusmate.models.Announcement;
 import com.campus.campusmate.models.AuditLog;
-import com.campus.campusmate.utils.SupabaseManager;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 /**
  * Repository class responsible for managing Announcement data.
@@ -44,22 +38,18 @@ public class AnnouncementRepository extends BaseRepository {
     public void createAnnouncement(Announcement announcement, OnCompleteListener listener) {
         String id = UUID.randomUUID().toString();
         announcement.setId(id);
-        dataApi.insertAnnouncement(announcement, "return=minimal").enqueue(new Callback<Void>() {
+        enqueue(dataApi.insertAnnouncement(announcement, "return=minimal"), new OnResult<Void>() {
             @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
-                if (response.isSuccessful()) {
-                    logAudit(announcement.getAuthorId(), announcement.getAuthorName(),
-                            AuditLog.ACTION_CREATE, AuditLog.TARGET_ANNOUNCEMENT, id,
-                            "Announcement created: " + announcement.getTitle());
-                    listener.onSuccess(id);
-                } else {
-                    listener.onError("Failed to create announcement");
-                }
+            public void onSuccess(Void body) {
+                logAudit(announcement.getAuthorId(), announcement.getAuthorName(),
+                        AuditLog.ACTION_CREATE, AuditLog.TARGET_ANNOUNCEMENT, id,
+                        "Announcement created: " + announcement.getTitle());
+                listener.onSuccess(id);
             }
 
             @Override
-            public void onFailure(Call<Void> call, Throwable t) {
-                listener.onError(t.getMessage());
+            public void onError(String message) {
+                listener.onError("Failed to create announcement");
             }
         });
     }
@@ -69,16 +59,15 @@ public class AnnouncementRepository extends BaseRepository {
         Map<String, String> filter = new HashMap<>();
         filter.put("id", "eq." + announcement.getId());
         Map<String, Object> fields = buildAnnouncementPatch(announcement);
-        dataApi.patchAnnouncement(filter, fields, "return=minimal").enqueue(new Callback<Void>() {
+        enqueue(dataApi.patchAnnouncement(filter, fields, "return=minimal"), new OnResult<Void>() {
             @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
-                if (response.isSuccessful()) listener.onSuccess(announcement.getId());
-                else listener.onError("Update failed");
+            public void onSuccess(Void body) {
+                listener.onSuccess(announcement.getId());
             }
 
             @Override
-            public void onFailure(Call<Void> call, Throwable t) {
-                listener.onError(t.getMessage());
+            public void onError(String message) {
+                listener.onError("Update failed");
             }
         });
     }
@@ -86,21 +75,17 @@ public class AnnouncementRepository extends BaseRepository {
     public void deleteAnnouncement(String id, String userId, String userName, OnSimpleListener listener) {
         Map<String, String> filter = new HashMap<>();
         filter.put("id", "eq." + id);
-        dataApi.deleteAnnouncement(filter).enqueue(new Callback<Void>() {
+        enqueue(dataApi.deleteAnnouncement(filter), new OnResult<Void>() {
             @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
-                if (response.isSuccessful()) {
-                    logAudit(userId, userName, AuditLog.ACTION_DELETE,
-                            AuditLog.TARGET_ANNOUNCEMENT, id, "Announcement deleted");
-                    listener.onSuccess();
-                } else {
-                    listener.onError("Delete failed");
-                }
+            public void onSuccess(Void body) {
+                logAudit(userId, userName, AuditLog.ACTION_DELETE,
+                        AuditLog.TARGET_ANNOUNCEMENT, id, "Announcement deleted");
+                listener.onSuccess();
             }
 
             @Override
-            public void onFailure(Call<Void> call, Throwable t) {
-                listener.onError(t.getMessage());
+            public void onError(String message) {
+                listener.onError("Delete failed");
             }
         });
     }
@@ -113,21 +98,17 @@ public class AnnouncementRepository extends BaseRepository {
         fields.put("approved_by", adminName);
         fields.put("approved_at", System.currentTimeMillis());
         fields.put("updated_at", System.currentTimeMillis());
-        dataApi.patchAnnouncement(filter, fields, "return=minimal").enqueue(new Callback<Void>() {
+        enqueue(dataApi.patchAnnouncement(filter, fields, "return=minimal"), new OnResult<Void>() {
             @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
-                if (response.isSuccessful()) {
-                    logAudit(adminId, adminName, AuditLog.ACTION_APPROVE,
-                            AuditLog.TARGET_ANNOUNCEMENT, id, "Announcement approved");
-                    listener.onSuccess();
-                } else {
-                    listener.onError("Approval failed");
-                }
+            public void onSuccess(Void body) {
+                logAudit(adminId, adminName, AuditLog.ACTION_APPROVE,
+                        AuditLog.TARGET_ANNOUNCEMENT, id, "Announcement approved");
+                listener.onSuccess();
             }
 
             @Override
-            public void onFailure(Call<Void> call, Throwable t) {
-                listener.onError(t.getMessage());
+            public void onError(String message) {
+                listener.onError("Approval failed");
             }
         });
     }
@@ -140,21 +121,17 @@ public class AnnouncementRepository extends BaseRepository {
         fields.put("status", Announcement.STATUS_REJECTED);
         fields.put("rejection_reason", reason);
         fields.put("updated_at", System.currentTimeMillis());
-        dataApi.patchAnnouncement(filter, fields, "return=minimal").enqueue(new Callback<Void>() {
+        enqueue(dataApi.patchAnnouncement(filter, fields, "return=minimal"), new OnResult<Void>() {
             @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
-                if (response.isSuccessful()) {
-                    logAudit(adminId, adminName, AuditLog.ACTION_REJECT,
-                            AuditLog.TARGET_ANNOUNCEMENT, id, "Announcement rejected: " + reason);
-                    listener.onSuccess();
-                } else {
-                    listener.onError("Rejection failed");
-                }
+            public void onSuccess(Void body) {
+                logAudit(adminId, adminName, AuditLog.ACTION_REJECT,
+                        AuditLog.TARGET_ANNOUNCEMENT, id, "Announcement rejected: " + reason);
+                listener.onSuccess();
             }
 
             @Override
-            public void onFailure(Call<Void> call, Throwable t) {
-                listener.onError(t.getMessage());
+            public void onError(String message) {
+                listener.onError("Rejection failed");
             }
         });
     }
@@ -169,20 +146,17 @@ public class AnnouncementRepository extends BaseRepository {
         } else {
             filter.put("visibility", "eq.general");
         }
-        dataApi.getAnnouncements(filter, null).enqueue(new Callback<List<Announcement>>() {
+        enqueue(dataApi.getAnnouncements(filter, null), new OnResult<List<Announcement>>() {
             @Override
-            public void onResponse(Call<List<Announcement>> call, Response<List<Announcement>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    List<Announcement> list = response.body();
-                    Collections.sort(list, (a, b) -> Long.compare(b.getCreatedAt(), a.getCreatedAt()));
-                    liveData.postValue(list);
-                } else {
-                    liveData.postValue(null);
+            public void onSuccess(List<Announcement> body) {
+                if (body != null) {
+                    Collections.sort(body, (a, b) -> Long.compare(b.getCreatedAt(), a.getCreatedAt()));
                 }
+                liveData.postValue(body);
             }
 
             @Override
-            public void onFailure(Call<List<Announcement>> call, Throwable t) {
+            public void onError(String message) {
                 liveData.postValue(null);
             }
         });
@@ -192,14 +166,14 @@ public class AnnouncementRepository extends BaseRepository {
         Map<String, String> filter = new HashMap<>();
         filter.put("status", "eq." + Announcement.STATUS_PENDING);
         filter.put("order", "created_at.asc");
-        dataApi.getAnnouncements(filter, null).enqueue(new Callback<List<Announcement>>() {
+        enqueue(dataApi.getAnnouncements(filter, null), new OnResult<List<Announcement>>() {
             @Override
-            public void onResponse(Call<List<Announcement>> call, Response<List<Announcement>> response) {
-                liveData.postValue(response.isSuccessful() ? response.body() : null);
+            public void onSuccess(List<Announcement> body) {
+                liveData.postValue(body);
             }
 
             @Override
-            public void onFailure(Call<List<Announcement>> call, Throwable t) {
+            public void onError(String message) {
                 liveData.postValue(null);
             }
         });
@@ -209,14 +183,14 @@ public class AnnouncementRepository extends BaseRepository {
         Map<String, String> filter = new HashMap<>();
         filter.put("author_id", "eq." + userId);
         filter.put("order", "created_at.desc");
-        dataApi.getAnnouncements(filter, null).enqueue(new Callback<List<Announcement>>() {
+        enqueue(dataApi.getAnnouncements(filter, null), new OnResult<List<Announcement>>() {
             @Override
-            public void onResponse(Call<List<Announcement>> call, Response<List<Announcement>> response) {
-                liveData.postValue(response.isSuccessful() ? response.body() : null);
+            public void onSuccess(List<Announcement> body) {
+                liveData.postValue(body);
             }
 
             @Override
-            public void onFailure(Call<List<Announcement>> call, Throwable t) {
+            public void onError(String message) {
                 liveData.postValue(null);
             }
         });
@@ -225,14 +199,14 @@ public class AnnouncementRepository extends BaseRepository {
     public void observeAllAnnouncements(MutableLiveData<List<Announcement>> liveData) {
         Map<String, String> filter = new HashMap<>();
         filter.put("order", "created_at.desc");
-        dataApi.getAnnouncements(filter, null).enqueue(new Callback<List<Announcement>>() {
+        enqueue(dataApi.getAnnouncements(filter, null), new OnResult<List<Announcement>>() {
             @Override
-            public void onResponse(Call<List<Announcement>> call, Response<List<Announcement>> response) {
-                liveData.postValue(response.isSuccessful() ? response.body() : null);
+            public void onSuccess(List<Announcement> body) {
+                liveData.postValue(body);
             }
 
             @Override
-            public void onFailure(Call<List<Announcement>> call, Throwable t) {
+            public void onError(String message) {
                 liveData.postValue(null);
             }
         });
@@ -241,19 +215,19 @@ public class AnnouncementRepository extends BaseRepository {
     public void fetchAnnouncementById(String id, OnAnnouncementFetchedListener listener) {
         Map<String, String> filter = new HashMap<>();
         filter.put("id", "eq." + id);
-        dataApi.getAnnouncements(filter, null).enqueue(new Callback<List<Announcement>>() {
+        enqueue(dataApi.getAnnouncements(filter, null), new OnResult<List<Announcement>>() {
             @Override
-            public void onResponse(Call<List<Announcement>> call, Response<List<Announcement>> response) {
-                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
-                    listener.onFetched(response.body().get(0));
+            public void onSuccess(List<Announcement> body) {
+                if (body != null && !body.isEmpty()) {
+                    listener.onFetched(body.get(0));
                 } else {
                     listener.onFetched(null);
                 }
             }
 
             @Override
-            public void onFailure(Call<List<Announcement>> call, Throwable t) {
-                listener.onError(t.getMessage());
+            public void onError(String message) {
+                listener.onError(message);
             }
         });
     }

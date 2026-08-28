@@ -4,20 +4,13 @@ import android.content.Context;
 
 import androidx.lifecycle.MutableLiveData;
 
-import com.campus.campusmate.api.SupabaseApi;
 import com.campus.campusmate.models.AuditLog;
 import com.campus.campusmate.models.Event;
-import com.campus.campusmate.utils.SupabaseManager;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 public class EventRepository extends BaseRepository {
 
@@ -38,22 +31,18 @@ public class EventRepository extends BaseRepository {
     public void createEvent(Event event, OnCompleteListener listener) {
         String id = UUID.randomUUID().toString();
         event.setId(id);
-        dataApi.insertEvent(event, "return=minimal").enqueue(new Callback<Void>() {
+        enqueue(dataApi.insertEvent(event, "return=minimal"), new OnResult<Void>() {
             @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
-                if (response.isSuccessful()) {
-                    logAudit(event.getAuthorId(), event.getAuthorName(),
-                            AuditLog.ACTION_CREATE, AuditLog.TARGET_EVENT,
-                            id, "Event created: " + event.getTitle());
-                    listener.onSuccess(id);
-                } else {
-                    listener.onError("Failed to create event");
-                }
+            public void onSuccess(Void body) {
+                logAudit(event.getAuthorId(), event.getAuthorName(),
+                        AuditLog.ACTION_CREATE, AuditLog.TARGET_EVENT,
+                        id, "Event created: " + event.getTitle());
+                listener.onSuccess(id);
             }
 
             @Override
-            public void onFailure(Call<Void> call, Throwable t) {
-                listener.onError(t.getMessage());
+            public void onError(String message) {
+                listener.onError("Failed to create event");
             }
         });
     }
@@ -62,16 +51,15 @@ public class EventRepository extends BaseRepository {
         Map<String, String> filter = new HashMap<>();
         filter.put("id", "eq." + event.getId());
         Map<String, Object> fields = buildEventPatch(event);
-        dataApi.patchEvent(filter, fields, "return=minimal").enqueue(new Callback<Void>() {
+        enqueue(dataApi.patchEvent(filter, fields, "return=minimal"), new OnResult<Void>() {
             @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
-                if (response.isSuccessful()) listener.onSuccess(event.getId());
-                else listener.onError("Update failed");
+            public void onSuccess(Void body) {
+                listener.onSuccess(event.getId());
             }
 
             @Override
-            public void onFailure(Call<Void> call, Throwable t) {
-                listener.onError(t.getMessage());
+            public void onError(String message) {
+                listener.onError("Update failed");
             }
         });
     }
@@ -79,21 +67,17 @@ public class EventRepository extends BaseRepository {
     public void deleteEvent(String id, String userId, String userName, OnSimpleListener listener) {
         Map<String, String> filter = new HashMap<>();
         filter.put("id", "eq." + id);
-        dataApi.deleteEvent(filter).enqueue(new Callback<Void>() {
+        enqueue(dataApi.deleteEvent(filter), new OnResult<Void>() {
             @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
-                if (response.isSuccessful()) {
-                    logAudit(userId, userName, AuditLog.ACTION_DELETE,
-                            AuditLog.TARGET_EVENT, id, "Event deleted");
-                    listener.onSuccess();
-                } else {
-                    listener.onError("Delete failed");
-                }
+            public void onSuccess(Void body) {
+                logAudit(userId, userName, AuditLog.ACTION_DELETE,
+                        AuditLog.TARGET_EVENT, id, "Event deleted");
+                listener.onSuccess();
             }
 
             @Override
-            public void onFailure(Call<Void> call, Throwable t) {
-                listener.onError(t.getMessage());
+            public void onError(String message) {
+                listener.onError("Delete failed");
             }
         });
     }
@@ -106,21 +90,17 @@ public class EventRepository extends BaseRepository {
         fields.put("approved_by", adminName);
         fields.put("approved_at", System.currentTimeMillis());
         fields.put("updated_at", System.currentTimeMillis());
-        dataApi.patchEvent(filter, fields, "return=minimal").enqueue(new Callback<Void>() {
+        enqueue(dataApi.patchEvent(filter, fields, "return=minimal"), new OnResult<Void>() {
             @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
-                if (response.isSuccessful()) {
-                    logAudit(adminId, adminName, AuditLog.ACTION_APPROVE,
-                            AuditLog.TARGET_EVENT, id, "Event approved");
-                    listener.onSuccess();
-                } else {
-                    listener.onError("Approval failed");
-                }
+            public void onSuccess(Void body) {
+                logAudit(adminId, adminName, AuditLog.ACTION_APPROVE,
+                        AuditLog.TARGET_EVENT, id, "Event approved");
+                listener.onSuccess();
             }
 
             @Override
-            public void onFailure(Call<Void> call, Throwable t) {
-                listener.onError(t.getMessage());
+            public void onError(String message) {
+                listener.onError("Approval failed");
             }
         });
     }
@@ -133,21 +113,17 @@ public class EventRepository extends BaseRepository {
         fields.put("status", Event.STATUS_REJECTED);
         fields.put("rejection_reason", reason);
         fields.put("updated_at", System.currentTimeMillis());
-        dataApi.patchEvent(filter, fields, "return=minimal").enqueue(new Callback<Void>() {
+        enqueue(dataApi.patchEvent(filter, fields, "return=minimal"), new OnResult<Void>() {
             @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
-                if (response.isSuccessful()) {
-                    logAudit(adminId, adminName, AuditLog.ACTION_REJECT,
-                            AuditLog.TARGET_EVENT, id, "Event rejected: " + reason);
-                    listener.onSuccess();
-                } else {
-                    listener.onError("Rejection failed");
-                }
+            public void onSuccess(Void body) {
+                logAudit(adminId, adminName, AuditLog.ACTION_REJECT,
+                        AuditLog.TARGET_EVENT, id, "Event rejected: " + reason);
+                listener.onSuccess();
             }
 
             @Override
-            public void onFailure(Call<Void> call, Throwable t) {
-                listener.onError(t.getMessage());
+            public void onError(String message) {
+                listener.onError("Rejection failed");
             }
         });
     }
@@ -161,14 +137,14 @@ public class EventRepository extends BaseRepository {
             filter.put("visibility", "eq.general");
         }
         filter.put("order", "start_date.asc");
-        dataApi.getEvents(filter, null).enqueue(new Callback<List<Event>>() {
+        enqueue(dataApi.getEvents(filter, null), new OnResult<List<Event>>() {
             @Override
-            public void onResponse(Call<List<Event>> call, Response<List<Event>> response) {
-                liveData.postValue(response.isSuccessful() ? response.body() : null);
+            public void onSuccess(List<Event> body) {
+                liveData.postValue(body);
             }
 
             @Override
-            public void onFailure(Call<List<Event>> call, Throwable t) {
+            public void onError(String message) {
                 liveData.postValue(null);
             }
         });
@@ -178,14 +154,14 @@ public class EventRepository extends BaseRepository {
         Map<String, String> filter = new HashMap<>();
         filter.put("status", "eq." + Event.STATUS_PENDING);
         filter.put("order", "created_at.asc");
-        dataApi.getEvents(filter, null).enqueue(new Callback<List<Event>>() {
+        enqueue(dataApi.getEvents(filter, null), new OnResult<List<Event>>() {
             @Override
-            public void onResponse(Call<List<Event>> call, Response<List<Event>> response) {
-                liveData.postValue(response.isSuccessful() ? response.body() : null);
+            public void onSuccess(List<Event> body) {
+                liveData.postValue(body);
             }
 
             @Override
-            public void onFailure(Call<List<Event>> call, Throwable t) {
+            public void onError(String message) {
                 liveData.postValue(null);
             }
         });
@@ -195,14 +171,14 @@ public class EventRepository extends BaseRepository {
         Map<String, String> filter = new HashMap<>();
         filter.put("author_id", "eq." + userId);
         filter.put("order", "created_at.desc");
-        dataApi.getEvents(filter, null).enqueue(new Callback<List<Event>>() {
+        enqueue(dataApi.getEvents(filter, null), new OnResult<List<Event>>() {
             @Override
-            public void onResponse(Call<List<Event>> call, Response<List<Event>> response) {
-                liveData.postValue(response.isSuccessful() ? response.body() : null);
+            public void onSuccess(List<Event> body) {
+                liveData.postValue(body);
             }
 
             @Override
-            public void onFailure(Call<List<Event>> call, Throwable t) {
+            public void onError(String message) {
                 liveData.postValue(null);
             }
         });
@@ -211,19 +187,19 @@ public class EventRepository extends BaseRepository {
     public void fetchEventById(String id, OnEventFetchedListener listener) {
         Map<String, String> filter = new HashMap<>();
         filter.put("id", "eq." + id);
-        dataApi.getEvents(filter, null).enqueue(new Callback<List<Event>>() {
+        enqueue(dataApi.getEvents(filter, null), new OnResult<List<Event>>() {
             @Override
-            public void onResponse(Call<List<Event>> call, Response<List<Event>> response) {
-                if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
-                    listener.onFetched(response.body().get(0));
+            public void onSuccess(List<Event> body) {
+                if (body != null && !body.isEmpty()) {
+                    listener.onFetched(body.get(0));
                 } else {
                     listener.onFetched(null);
                 }
             }
 
             @Override
-            public void onFailure(Call<List<Event>> call, Throwable t) {
-                listener.onError(t.getMessage());
+            public void onError(String message) {
+                listener.onError(message);
             }
         });
     }
@@ -231,14 +207,14 @@ public class EventRepository extends BaseRepository {
     public void observeAllEvents(MutableLiveData<List<Event>> liveData) {
         Map<String, String> filter = new HashMap<>();
         filter.put("order", "created_at.desc");
-        dataApi.getEvents(filter, null).enqueue(new Callback<List<Event>>() {
+        enqueue(dataApi.getEvents(filter, null), new OnResult<List<Event>>() {
             @Override
-            public void onResponse(Call<List<Event>> call, Response<List<Event>> response) {
-                liveData.postValue(response.isSuccessful() ? response.body() : null);
+            public void onSuccess(List<Event> body) {
+                liveData.postValue(body);
             }
 
             @Override
-            public void onFailure(Call<List<Event>> call, Throwable t) {
+            public void onError(String message) {
                 liveData.postValue(null);
             }
         });

@@ -35,7 +35,7 @@ public abstract class BaseRepository {
      */
     protected void logAudit(String userId, String userEmail, String action, String targetType, String targetId, String details) {
         if (dataApi == null) return;
-        
+
         AuditLog log = new AuditLog(userId, userEmail, action, targetType, targetId, details);
         log.setId(UUID.randomUUID().toString());
         dataApi.insertAuditLog(log, "return=minimal").enqueue(new Callback<Void>() {
@@ -49,5 +49,32 @@ public abstract class BaseRepository {
                 // Fail silently for audit logs
             }
         });
+    }
+
+    /**
+     * Enqueues a Retrofit call and routes its outcome through {@link OnResult}, collapsing
+     * the repeated isSuccessful/body-null branching every repository was hand-rolling per call.
+     */
+    protected <T> void enqueue(Call<T> call, OnResult<T> result) {
+        call.enqueue(new Callback<T>() {
+            @Override
+            public void onResponse(Call<T> call, Response<T> response) {
+                if (response.isSuccessful()) {
+                    result.onSuccess(response.body());
+                } else {
+                    result.onError("Request failed: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<T> call, Throwable t) {
+                result.onError(t.getMessage());
+            }
+        });
+    }
+
+    protected interface OnResult<T> {
+        void onSuccess(T body);
+        void onError(String message);
     }
 }
