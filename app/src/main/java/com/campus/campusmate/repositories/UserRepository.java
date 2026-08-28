@@ -51,7 +51,7 @@ public class UserRepository extends BaseRepository {
         // Ensure no stale session interferes with the sign-up call.
         session.saveTokens(null, null);
 
-        android.util.Log.d("UserRepository", "Registering via Supabase Auth: " + sanitizedEmail);
+        android.util.Log.d("UserRepository", "Registering new account via Supabase Auth");
 
         authApi.signUp(new AuthRequest(sanitizedEmail, password)).enqueue(new Callback<AuthResponse>() {
             @Override
@@ -137,13 +137,13 @@ public class UserRepository extends BaseRepository {
         // Ensure no stale tokens interfere with the sign-in call itself.
         session.saveTokens(null, null);
 
-        android.util.Log.d("UserRepository", "Attempting login for: " + sanitizedEmail);
+        android.util.Log.d("UserRepository", "Attempting login");
 
         authApi.signIn("password", new AuthRequest(sanitizedEmail, password)).enqueue(new Callback<AuthResponse>() {
             @Override
             public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
                 if (!response.isSuccessful() || response.body() == null || !response.body().isSuccess()) {
-                    android.util.Log.w("UserRepository", "Sign-in failed for " + sanitizedEmail + ": " + response.code());
+                    android.util.Log.w("UserRepository", "Sign-in failed: " + response.code());
                     listener.onError("invalid_credentials");
                     return;
                 }
@@ -159,10 +159,10 @@ public class UserRepository extends BaseRepository {
                     public void onResponse(Call<List<User>> call, Response<List<User>> response) {
                         if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                             User user = response.body().get(0);
-                            android.util.Log.d("UserRepository", "Login profile loaded: " + user.getEmail());
+                            android.util.Log.d("UserRepository", "Login profile loaded");
                             finishLogin(user, listener);
                         } else {
-                            android.util.Log.e("UserRepository", "No profile row for authenticated uid: " + uid);
+                            android.util.Log.e("UserRepository", "No profile row for authenticated user");
                             session.saveTokens(null, null);
                             listener.onError("server_error");
                         }
@@ -297,19 +297,19 @@ public class UserRepository extends BaseRepository {
     public void fetchUserProfile(String uid, OnUserFetchedListener listener) {
         Map<String, String> filter = new HashMap<>();
         filter.put("uid", "eq." + uid);
-        
-        android.util.Log.d("UserRepository", "Fetching profile for UID: " + uid);
-        
+
+        android.util.Log.d("UserRepository", "Fetching user profile");
+
         dataApi.getUsers(filter).enqueue(new Callback<List<User>>() {
             @Override
             public void onResponse(Call<List<User>> call, Response<List<User>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     if (!response.body().isEmpty()) {
                         User user = response.body().get(0);
-                        android.util.Log.d("UserRepository", "Profile Found: " + user.getEmail());
+                        android.util.Log.d("UserRepository", "Profile found");
                         listener.onFetched(user);
                     } else {
-                        android.util.Log.w("UserRepository", "Profile NOT FOUND for UID: " + uid);
+                        android.util.Log.w("UserRepository", "Profile not found for requested user");
                         listener.onError("user_not_found");
                     }
                 } else {
@@ -339,8 +339,8 @@ public class UserRepository extends BaseRepository {
         Map<String, String> filter = new HashMap<>();
         filter.put("uid", "eq." + uid);
         Map<String, Object> fields = buildUserPatch(user);
-        
-        android.util.Log.d("UserRepository", "Updating profile for UID: " + uid);
+
+        android.util.Log.d("UserRepository", "Updating user profile");
 
         dataApi.patchUserMap(filter, fields, "return=minimal").enqueue(new Callback<Void>() {
             @Override

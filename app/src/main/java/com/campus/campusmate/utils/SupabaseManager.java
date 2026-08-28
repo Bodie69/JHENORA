@@ -2,6 +2,7 @@ package com.campus.campusmate.utils;
 
 import android.content.Context;
 
+import com.campus.campusmate.BuildConfig;
 import com.campus.campusmate.api.SupabaseApi;
 import com.campus.campusmate.api.SupabaseAuthApi;
 import com.campus.campusmate.api.dto.AuthResponse;
@@ -45,7 +46,9 @@ public class SupabaseManager {
         SessionManager session = new SessionManager(context);
 
         HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
-        logging.setLevel(HttpLoggingInterceptor.Level.BODY);
+        logging.setLevel(BuildConfig.DEBUG
+                ? HttpLoggingInterceptor.Level.BODY
+                : HttpLoggingInterceptor.Level.NONE);
 
         Gson gson = new GsonBuilder()
                 .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
