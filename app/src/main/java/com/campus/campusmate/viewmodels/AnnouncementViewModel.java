@@ -1,6 +1,7 @@
 package com.campus.campusmate.viewmodels;
 
 import android.app.Application;
+import android.net.Uri;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.MutableLiveData;
@@ -8,6 +9,7 @@ import androidx.lifecycle.MutableLiveData;
 import com.campus.campusmate.base.BaseViewModel;
 import com.campus.campusmate.models.Announcement;
 import com.campus.campusmate.repositories.AnnouncementRepository;
+import com.campus.campusmate.utils.SupabaseStorage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +21,7 @@ public class AnnouncementViewModel extends BaseViewModel {
     public final MutableLiveData<List<Announcement>> announcements = new MutableLiveData<>(new ArrayList<>());
     public final MutableLiveData<List<Announcement>> pendingAnnouncements = new MutableLiveData<>(new ArrayList<>());
     public final MutableLiveData<List<Announcement>> userAnnouncements = new MutableLiveData<>(new ArrayList<>());
+    public final MutableLiveData<Announcement> loadedAnnouncement = new MutableLiveData<>();
     public final MutableLiveData<String> successMessage = new MutableLiveData<>();
     public final MutableLiveData<String> filterDept = new MutableLiveData<>("All");
     public final MutableLiveData<String> sortOrder = new MutableLiveData<>("Latest");
@@ -28,6 +31,57 @@ public class AnnouncementViewModel extends BaseViewModel {
         super(application);
         repo = AnnouncementRepository.getInstance();
         repo.init(application);
+    }
+
+    /** Loads a single announcement by id; result is posted to {@link #loadedAnnouncement}. */
+    public void loadAnnouncement(String id) {
+        setLoading(true);
+        repo.fetchAnnouncementById(id, new AnnouncementRepository.OnAnnouncementFetchedListener() {
+            @Override
+            public void onFetched(Announcement announcement) {
+                setLoading(false);
+                loadedAnnouncement.postValue(announcement);
+            }
+
+            @Override
+            public void onError(String message) {
+                setError(message);
+            }
+        });
+    }
+
+    /**
+     * Uploads {@code imageUri} (if present) then creates/updates the announcement.
+     * Mirrors the previous Activity-side orchestration so the Activity only triggers this
+     * and observes {@link #successMessage}/{@link #errorMessage}/{@link #isLoading}.
+     */
+    public void submitWithImage(Announcement announcement, Uri imageUri, boolean isEdit) {
+        setLoading(true);
+        if (imageUri == null) {
+            submitOrUpdate(announcement, isEdit);
+            return;
+        }
+        SupabaseStorage.uploadImage(getApplication(), imageUri, "announcements", new SupabaseStorage.UploadCallback() {
+            @Override
+            public void onSuccess(String publicUrl) {
+                announcement.setImageUrl(publicUrl);
+                submitOrUpdate(announcement, isEdit);
+            }
+
+            @Override
+            public void onFailure(String errorMessage) {
+                _errorMessage.postValue("Image upload failed, submitting without image");
+                submitOrUpdate(announcement, isEdit);
+            }
+        });
+    }
+
+    private void submitOrUpdate(Announcement announcement, boolean isEdit) {
+        if (isEdit) {
+            updateAnnouncement(announcement);
+        } else {
+            submitAnnouncement(announcement);
+        }
     }
 
     public void loadApprovedAnnouncements(String userDept) {

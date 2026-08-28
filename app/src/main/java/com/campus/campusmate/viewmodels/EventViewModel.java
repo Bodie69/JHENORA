@@ -1,6 +1,7 @@
 package com.campus.campusmate.viewmodels;
 
 import android.app.Application;
+import android.net.Uri;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.MutableLiveData;
@@ -8,6 +9,7 @@ import androidx.lifecycle.MutableLiveData;
 import com.campus.campusmate.base.BaseViewModel;
 import com.campus.campusmate.models.Event;
 import com.campus.campusmate.repositories.EventRepository;
+import com.campus.campusmate.utils.SupabaseStorage;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +21,7 @@ public class EventViewModel extends BaseViewModel {
     public final MutableLiveData<List<Event>> events = new MutableLiveData<>(new ArrayList<>());
     public final MutableLiveData<List<Event>> pendingEvents = new MutableLiveData<>(new ArrayList<>());
     public final MutableLiveData<List<Event>> userEvents = new MutableLiveData<>(new ArrayList<>());
+    public final MutableLiveData<Event> loadedEvent = new MutableLiveData<>();
     public final MutableLiveData<String> successMessage = new MutableLiveData<>();
     public final MutableLiveData<String> searchQuery = new MutableLiveData<>("");
     public final MutableLiveData<String> filterDept = new MutableLiveData<>("All");
@@ -27,6 +30,56 @@ public class EventViewModel extends BaseViewModel {
         super(application);
         repo = EventRepository.getInstance();
         repo.init(application);
+    }
+
+    /** Loads a single event by id; result is posted to {@link #loadedEvent}. */
+    public void loadEvent(String id) {
+        setLoading(true);
+        repo.fetchEventById(id, new EventRepository.OnEventFetchedListener() {
+            @Override
+            public void onFetched(Event event) {
+                setLoading(false);
+                loadedEvent.postValue(event);
+            }
+
+            @Override
+            public void onError(String message) {
+                setError(message);
+            }
+        });
+    }
+
+    /**
+     * Uploads {@code imageUri} (if present) then creates/updates the event.
+     * Mirrors the previous Activity-side orchestration so the Activity only triggers this
+     * and observes {@link #successMessage}/{@link #errorMessage}/{@link #isLoading}.
+     */
+    public void submitWithImage(Event event, Uri imageUri, boolean isEdit) {
+        setLoading(true);
+        if (imageUri == null) {
+            submitOrUpdate(event, isEdit);
+            return;
+        }
+        SupabaseStorage.uploadImage(getApplication(), imageUri, "events", new SupabaseStorage.UploadCallback() {
+            @Override
+            public void onSuccess(String publicUrl) {
+                event.setImageUrl(publicUrl);
+                submitOrUpdate(event, isEdit);
+            }
+
+            @Override
+            public void onFailure(String errorMessage) {
+                submitOrUpdate(event, isEdit);
+            }
+        });
+    }
+
+    private void submitOrUpdate(Event event, boolean isEdit) {
+        if (isEdit) {
+            updateEvent(event);
+        } else {
+            submitEvent(event);
+        }
     }
 
     public void loadApprovedEvents(String userDept) {

@@ -2,36 +2,31 @@ package com.campus.campusmate.activities;
 
 import android.app.DatePickerDialog;
 import android.net.Uri;
-import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.bumptech.glide.Glide;
 import com.campus.campusmate.R;
+import com.campus.campusmate.base.BaseActivity;
 import com.campus.campusmate.databinding.ActivityCreateEventBinding;
 import com.campus.campusmate.models.Event;
-import com.campus.campusmate.repositories.EventRepository;
 import com.campus.campusmate.utils.Constants;
 import com.campus.campusmate.utils.DateUtils;
 import com.campus.campusmate.utils.InputSanitizer;
-import com.campus.campusmate.utils.SessionManager;
-import com.campus.campusmate.utils.SupabaseStorage;
 import com.campus.campusmate.utils.UiUtils;
 import com.campus.campusmate.utils.ValidationUtils;
 import com.campus.campusmate.viewmodels.EventViewModel;
 
 import java.util.Calendar;
 
-public class CreateEventActivity extends AppCompatActivity {
+public class CreateEventActivity extends BaseActivity<ActivityCreateEventBinding> {
 
-    private ActivityCreateEventBinding binding;
     private EventViewModel viewModel;
-    private SessionManager session;
     private Uri selectedImageUri;
     private long selectedStartDate = 0;
     private long selectedEndDate = 0;
@@ -48,50 +43,29 @@ public class CreateEventActivity extends AppCompatActivity {
             });
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        binding = ActivityCreateEventBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+    protected ActivityCreateEventBinding inflateBinding(LayoutInflater inflater) {
+        return ActivityCreateEventBinding.inflate(inflater);
+    }
 
-        session = new SessionManager(this);
+    @Override
+    protected void setupViews() {
         viewModel = new ViewModelProvider(this).get(EventViewModel.class);
 
         setupDropdowns();
-        setupObservers();
         setupListeners();
 
         editEventId = getIntent().getStringExtra(Constants.EXTRA_EVENT_ID);
         boolean isEdit = getIntent().getBooleanExtra(Constants.EXTRA_EDIT_MODE, false)
                 && editEventId != null;
         if (isEdit) {
-            loadForEdit();
+            binding.tvScreenTitle.setText(R.string.title_edit_event);
+            binding.btnSubmit.setText(R.string.btn_update);
+            viewModel.loadEvent(editEventId);
         }
     }
 
-    private void loadForEdit() {
-        binding.tvScreenTitle.setText(R.string.title_edit_event);
-        binding.btnSubmit.setText(R.string.btn_update);
-        binding.progressBar.setVisibility(View.VISIBLE);
-        EventRepository.getInstance().fetchEventById(editEventId,
-                new EventRepository.OnEventFetchedListener() {
-                    @Override
-                    public void onFetched(Event e) {
-                        binding.progressBar.setVisibility(View.GONE);
-                        if (e != null) {
-                            editingEvent = e;
-                            prefillForm(e);
-                        }
-                    }
-
-                    @Override
-                    public void onError(String message) {
-                        binding.progressBar.setVisibility(View.GONE);
-                        UiUtils.showToast(CreateEventActivity.this, message);
-                    }
-                });
-    }
-
     private void prefillForm(Event e) {
+        editingEvent = e;
         binding.etTitle.setText(e.getTitle());
         binding.etWhat.setText(e.getWhat());
         binding.etWho.setText(e.getWho());
@@ -137,7 +111,8 @@ public class CreateEventActivity extends AppCompatActivity {
         });
     }
 
-    private void setupObservers() {
+    @Override
+    protected void setupObservers() {
         viewModel.isLoading.observe(this, loading -> {
             binding.progressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
             binding.btnSubmit.setEnabled(!loading);
@@ -147,6 +122,9 @@ public class CreateEventActivity extends AppCompatActivity {
         });
         viewModel.errorMessage.observe(this, msg -> {
             if (msg != null) UiUtils.showSnackbar(binding.getRoot(), msg);
+        });
+        viewModel.loadedEvent.observe(this, e -> {
+            if (e != null) prefillForm(e);
         });
     }
 
@@ -213,35 +191,6 @@ public class CreateEventActivity extends AppCompatActivity {
             e.setDepartment(dept.isEmpty() ? session.getUserDepartment() : dept);
         }
 
-        if (selectedImageUri != null) {
-            uploadImageThenSubmit(e);
-        } else {
-            submitEvent(e);
-        }
-    }
-
-    private void uploadImageThenSubmit(Event e) {
-        binding.progressBar.setVisibility(View.VISIBLE);
-        SupabaseStorage.uploadImage(this, selectedImageUri, "events", new SupabaseStorage.UploadCallback() {
-            @Override
-            public void onSuccess(String publicUrl) {
-                e.setImageUrl(publicUrl);
-                submitEvent(e);
-            }
-
-            @Override
-            public void onFailure(String errorMessage) {
-                binding.progressBar.setVisibility(View.GONE);
-                submitEvent(e);
-            }
-        });
-    }
-
-    private void submitEvent(Event e) {
-        if (editingEvent != null) {
-            viewModel.updateEvent(e);
-        } else {
-            viewModel.submitEvent(e);
-        }
+        viewModel.submitWithImage(e, selectedImageUri, editingEvent != null);
     }
 }

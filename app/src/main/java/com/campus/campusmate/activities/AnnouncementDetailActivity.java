@@ -1,64 +1,69 @@
 package com.campus.campusmate.activities;
 
 import android.content.Intent;
-import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.bumptech.glide.Glide;
 import com.campus.campusmate.R;
+import com.campus.campusmate.base.BaseActivity;
 import com.campus.campusmate.databinding.ActivityAnnouncementDetailBinding;
 import com.campus.campusmate.models.Announcement;
-import com.campus.campusmate.repositories.AnnouncementRepository;
 import com.campus.campusmate.utils.Constants;
 import com.campus.campusmate.utils.DateUtils;
-import com.campus.campusmate.utils.SessionManager;
 import com.campus.campusmate.utils.UiUtils;
+import com.campus.campusmate.viewmodels.AnnouncementViewModel;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
-public class AnnouncementDetailActivity extends AppCompatActivity {
+public class AnnouncementDetailActivity extends BaseActivity<ActivityAnnouncementDetailBinding> {
 
-    private ActivityAnnouncementDetailBinding binding;
+    private AnnouncementViewModel viewModel;
     private String announcementId;
-    private SessionManager session;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        binding = ActivityAnnouncementDetailBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+    protected ActivityAnnouncementDetailBinding inflateBinding(LayoutInflater inflater) {
+        return ActivityAnnouncementDetailBinding.inflate(inflater);
+    }
 
+    @Override
+    protected void setupViews() {
         announcementId = getIntent().getStringExtra(Constants.EXTRA_ANNOUNCEMENT_ID);
         if (announcementId == null) {
             finish();
             return;
         }
 
-        AnnouncementRepository.getInstance().init(this);
-        session = new SessionManager(this);
+        viewModel = new ViewModelProvider(this).get(AnnouncementViewModel.class);
 
         binding.btnBack.setOnClickListener(v -> finish());
-        loadAnnouncement();
+        viewModel.loadAnnouncement(announcementId);
     }
 
-    private void loadAnnouncement() {
-        binding.progressBar.setVisibility(View.VISIBLE);
-        AnnouncementRepository.getInstance().fetchAnnouncementById(announcementId,
-                new AnnouncementRepository.OnAnnouncementFetchedListener() {
-                    @Override
-                    public void onFetched(Announcement a) {
-                        binding.progressBar.setVisibility(View.GONE);
-                        if (a != null) bindData(a);
-                        else UiUtils.showToast(AnnouncementDetailActivity.this, getString(R.string.error_generic));
-                    }
+    @Override
+    protected void setupObservers() {
+        viewModel.isLoading.observe(this, loading ->
+                binding.progressBar.setVisibility(loading ? View.VISIBLE : View.GONE));
 
-                    @Override
-                    public void onError(String message) {
-                        binding.progressBar.setVisibility(View.GONE);
-                        UiUtils.showToast(AnnouncementDetailActivity.this, message);
-                    }
-                });
+        viewModel.loadedAnnouncement.observe(this, a -> {
+            if (a != null) {
+                bindData(a);
+            } else {
+                UiUtils.showToast(this, getString(R.string.error_generic));
+            }
+        });
+
+        viewModel.successMessage.observe(this, msg -> {
+            if (msg != null) {
+                UiUtils.showToast(this, getString(R.string.success_post_deleted));
+                finish();
+            }
+        });
+
+        viewModel.errorMessage.observe(this, msg -> {
+            if (msg != null) UiUtils.showToast(this, msg);
+        });
     }
 
     private void bindData(Announcement a) {
@@ -115,25 +120,8 @@ public class AnnouncementDetailActivity extends AppCompatActivity {
         new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.dialog_confirm_delete)
                 .setMessage(R.string.dialog_confirm_delete_msg)
-                .setPositiveButton(R.string.btn_delete, (d, w) -> {
-                    binding.progressBar.setVisibility(View.VISIBLE);
-                    AnnouncementRepository.getInstance().deleteAnnouncement(a.getId(),
-                            session.getUserId(), session.getUserName(),
-                            new AnnouncementRepository.OnSimpleListener() {
-                                @Override
-                                public void onSuccess() {
-                                    UiUtils.showToast(AnnouncementDetailActivity.this,
-                                            getString(R.string.success_post_deleted));
-                                    finish();
-                                }
-
-                                @Override
-                                public void onError(String message) {
-                                    binding.progressBar.setVisibility(View.GONE);
-                                    UiUtils.showToast(AnnouncementDetailActivity.this, message);
-                                }
-                            });
-                })
+                .setPositiveButton(R.string.btn_delete, (d, w) ->
+                        viewModel.deleteAnnouncement(a.getId(), session.getUserId(), session.getUserName()))
                 .setNegativeButton(R.string.btn_cancel, null)
                 .show();
     }

@@ -2,60 +2,65 @@ package com.campus.campusmate.activities;
 
 import android.content.Intent;
 import android.net.Uri;
-import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.bumptech.glide.Glide;
 import com.campus.campusmate.R;
+import com.campus.campusmate.base.BaseActivity;
 import com.campus.campusmate.databinding.ActivityEventDetailBinding;
 import com.campus.campusmate.models.Event;
-import com.campus.campusmate.repositories.EventRepository;
 import com.campus.campusmate.utils.Constants;
 import com.campus.campusmate.utils.DateUtils;
-import com.campus.campusmate.utils.SessionManager;
 import com.campus.campusmate.utils.UiUtils;
+import com.campus.campusmate.viewmodels.EventViewModel;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
-public class EventDetailActivity extends AppCompatActivity {
+public class EventDetailActivity extends BaseActivity<ActivityEventDetailBinding> {
 
-    private ActivityEventDetailBinding binding;
+    private EventViewModel viewModel;
     private String eventId;
-    private SessionManager session;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        binding = ActivityEventDetailBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
-
-        eventId = getIntent().getStringExtra(Constants.EXTRA_EVENT_ID);
-        if (eventId == null) { finish(); return; }
-
-        EventRepository.getInstance().init(this);
-        session = new SessionManager(this);
-
-        binding.btnBack.setOnClickListener(v -> finish());
-        loadEvent();
+    protected ActivityEventDetailBinding inflateBinding(LayoutInflater inflater) {
+        return ActivityEventDetailBinding.inflate(inflater);
     }
 
-    private void loadEvent() {
-        binding.progressBar.setVisibility(View.VISIBLE);
-        EventRepository.getInstance().fetchEventById(eventId,
-                new EventRepository.OnEventFetchedListener() {
-                    @Override
-                    public void onFetched(Event e) {
-                        binding.progressBar.setVisibility(View.GONE);
-                        if (e != null) bindData(e);
-                    }
+    @Override
+    protected void setupViews() {
+        eventId = getIntent().getStringExtra(Constants.EXTRA_EVENT_ID);
+        if (eventId == null) {
+            finish();
+            return;
+        }
 
-                    @Override
-                    public void onError(String message) {
-                        binding.progressBar.setVisibility(View.GONE);
-                        UiUtils.showToast(EventDetailActivity.this, message);
-                    }
-                });
+        viewModel = new ViewModelProvider(this).get(EventViewModel.class);
+
+        binding.btnBack.setOnClickListener(v -> finish());
+        viewModel.loadEvent(eventId);
+    }
+
+    @Override
+    protected void setupObservers() {
+        viewModel.isLoading.observe(this, loading ->
+                binding.progressBar.setVisibility(loading ? View.VISIBLE : View.GONE));
+
+        viewModel.loadedEvent.observe(this, e -> {
+            if (e != null) bindData(e);
+        });
+
+        viewModel.successMessage.observe(this, msg -> {
+            if (msg != null) {
+                UiUtils.showToast(this, getString(R.string.success_post_deleted));
+                finish();
+            }
+        });
+
+        viewModel.errorMessage.observe(this, msg -> {
+            if (msg != null) UiUtils.showToast(this, msg);
+        });
     }
 
     private void bindData(Event e) {
@@ -118,25 +123,8 @@ public class EventDetailActivity extends AppCompatActivity {
         new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.dialog_confirm_delete)
                 .setMessage(R.string.dialog_confirm_delete_msg)
-                .setPositiveButton(R.string.btn_delete, (d, w) -> {
-                    binding.progressBar.setVisibility(View.VISIBLE);
-                    EventRepository.getInstance().deleteEvent(e.getId(),
-                            session.getUserId(), session.getUserName(),
-                            new EventRepository.OnSimpleListener() {
-                                @Override
-                                public void onSuccess() {
-                                    UiUtils.showToast(EventDetailActivity.this,
-                                            getString(R.string.success_post_deleted));
-                                    finish();
-                                }
-
-                                @Override
-                                public void onError(String message) {
-                                    binding.progressBar.setVisibility(View.GONE);
-                                    UiUtils.showToast(EventDetailActivity.this, message);
-                                }
-                            });
-                })
+                .setPositiveButton(R.string.btn_delete, (d, w) ->
+                        viewModel.deleteEvent(e.getId(), session.getUserId(), session.getUserName()))
                 .setNegativeButton(R.string.btn_cancel, null)
                 .show();
     }

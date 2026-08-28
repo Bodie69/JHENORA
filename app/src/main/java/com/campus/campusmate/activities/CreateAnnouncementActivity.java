@@ -1,35 +1,31 @@
 package com.campus.campusmate.activities;
 
 import android.net.Uri;
-import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.campus.campusmate.R;
+import com.campus.campusmate.base.BaseActivity;
 import com.campus.campusmate.databinding.ActivityCreateAnnouncementBinding;
 import com.campus.campusmate.models.Announcement;
-import com.campus.campusmate.repositories.AnnouncementRepository;
 import com.campus.campusmate.utils.Constants;
 import com.campus.campusmate.utils.InputSanitizer;
-import com.campus.campusmate.utils.SessionManager;
-import com.campus.campusmate.utils.SupabaseStorage;
 import com.campus.campusmate.utils.UiUtils;
 import com.campus.campusmate.utils.ValidationUtils;
 import com.campus.campusmate.viewmodels.AnnouncementViewModel;
 import com.bumptech.glide.Glide;
 
-public class CreateAnnouncementActivity extends AppCompatActivity {
+public class CreateAnnouncementActivity extends BaseActivity<ActivityCreateAnnouncementBinding> {
 
-    private ActivityCreateAnnouncementBinding binding;
     private AnnouncementViewModel viewModel;
-    private SessionManager session;
     private Uri selectedImageUri;
     private String editAnnouncementId;
+    private boolean isEdit;
     private Announcement editingAnnouncement;
 
     private final ActivityResultLauncher<String> imagePickerLauncher =
@@ -43,50 +39,28 @@ public class CreateAnnouncementActivity extends AppCompatActivity {
             });
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        binding = ActivityCreateAnnouncementBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+    protected ActivityCreateAnnouncementBinding inflateBinding(LayoutInflater inflater) {
+        return ActivityCreateAnnouncementBinding.inflate(inflater);
+    }
 
-        session = new SessionManager(this);
+    @Override
+    protected void setupViews() {
         viewModel = new ViewModelProvider(this).get(AnnouncementViewModel.class);
 
         setupDropdowns();
-        setupObservers();
         setupListeners();
 
         editAnnouncementId = getIntent().getStringExtra(Constants.EXTRA_ANNOUNCEMENT_ID);
-        boolean isEdit = getIntent().getBooleanExtra(Constants.EXTRA_EDIT_MODE, false)
-                && editAnnouncementId != null;
+        isEdit = getIntent().getBooleanExtra(Constants.EXTRA_EDIT_MODE, false) && editAnnouncementId != null;
         if (isEdit) {
-            loadForEdit();
+            binding.tvScreenTitle.setText(R.string.title_edit_announcement);
+            binding.btnSubmit.setText(R.string.btn_update);
+            viewModel.loadAnnouncement(editAnnouncementId);
         }
     }
 
-    private void loadForEdit() {
-        binding.tvScreenTitle.setText(R.string.title_edit_announcement);
-        binding.btnSubmit.setText(R.string.btn_update);
-        binding.progressBar.setVisibility(View.VISIBLE);
-        AnnouncementRepository.getInstance().fetchAnnouncementById(editAnnouncementId,
-                new AnnouncementRepository.OnAnnouncementFetchedListener() {
-                    @Override
-                    public void onFetched(Announcement a) {
-                        binding.progressBar.setVisibility(View.GONE);
-                        if (a != null) {
-                            editingAnnouncement = a;
-                            prefillForm(a);
-                        }
-                    }
-
-                    @Override
-                    public void onError(String message) {
-                        binding.progressBar.setVisibility(View.GONE);
-                        UiUtils.showToast(CreateAnnouncementActivity.this, message);
-                    }
-                });
-    }
-
     private void prefillForm(Announcement a) {
+        editingAnnouncement = a;
         binding.etTitle.setText(a.getTitle());
         binding.etWhat.setText(a.getWhat());
         binding.etWho.setText(a.getWho());
@@ -138,7 +112,8 @@ public class CreateAnnouncementActivity extends AppCompatActivity {
         });
     }
 
-    private void setupObservers() {
+    @Override
+    protected void setupObservers() {
         viewModel.isLoading.observe(this, loading -> {
             binding.progressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
             binding.btnSubmit.setEnabled(!loading);
@@ -151,6 +126,9 @@ public class CreateAnnouncementActivity extends AppCompatActivity {
         });
         viewModel.errorMessage.observe(this, msg -> {
             if (msg != null) UiUtils.showSnackbar(binding.getRoot(), msg);
+        });
+        viewModel.loadedAnnouncement.observe(this, a -> {
+            if (a != null) prefillForm(a);
         });
     }
 
@@ -195,37 +173,7 @@ public class CreateAnnouncementActivity extends AppCompatActivity {
             a.setDepartment(dept.isEmpty() ? session.getUserDepartment() : dept);
         }
 
-        if (selectedImageUri != null) {
-            uploadImageThenSubmit(a);
-        } else {
-            submitAnnouncement(a);
-        }
-    }
-
-    private void uploadImageThenSubmit(Announcement a) {
-        binding.progressBar.setVisibility(View.VISIBLE);
-        SupabaseStorage.uploadImage(this, selectedImageUri, "announcements", new SupabaseStorage.UploadCallback() {
-            @Override
-            public void onSuccess(String publicUrl) {
-                a.setImageUrl(publicUrl);
-                submitAnnouncement(a);
-            }
-
-            @Override
-            public void onFailure(String errorMessage) {
-                binding.progressBar.setVisibility(View.GONE);
-                UiUtils.showToast(CreateAnnouncementActivity.this, "Image upload failed, submitting without image");
-                submitAnnouncement(a);
-            }
-        });
-    }
-
-    private void submitAnnouncement(Announcement a) {
-        if (editingAnnouncement != null) {
-            viewModel.updateAnnouncement(a);
-        } else {
-            viewModel.submitAnnouncement(a);
-        }
+        viewModel.submitWithImage(a, selectedImageUri, editingAnnouncement != null);
     }
 
     private String priorityFromText(String text) {
