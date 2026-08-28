@@ -1,14 +1,14 @@
 package com.campus.campusmate.activities;
 
-import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.view.LayoutInflater;
 import android.view.View;
 
 import androidx.activity.OnBackPressedCallback;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.campus.campusmate.R;
+import com.campus.campusmate.base.BaseActivity;
 import com.campus.campusmate.databinding.ActivityForgotPasswordBinding;
 import com.campus.campusmate.utils.InputSanitizer;
 import com.campus.campusmate.utils.UiUtils;
@@ -20,11 +20,10 @@ import com.campus.campusmate.viewmodels.ForgotPasswordViewModel;
  * 1) request a verification code, 2) verify it, 3) set a new password.
  * No browser or deep-link reset is involved.
  */
-public class ForgotPasswordActivity extends AppCompatActivity {
+public class ForgotPasswordActivity extends BaseActivity<ActivityForgotPasswordBinding> {
 
     private static final long RESEND_COOLDOWN_MS = 60_000L;
 
-    private ActivityForgotPasswordBinding binding;
     private ForgotPasswordViewModel viewModel;
 
     private int currentStep = 1;
@@ -32,15 +31,15 @@ public class ForgotPasswordActivity extends AppCompatActivity {
     private CountDownTimer resendTimer;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        binding = ActivityForgotPasswordBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+    protected ActivityForgotPasswordBinding inflateBinding(LayoutInflater inflater) {
+        return ActivityForgotPasswordBinding.inflate(inflater);
+    }
 
+    @Override
+    protected void setupViews() {
         viewModel = new ViewModelProvider(this).get(ForgotPasswordViewModel.class);
 
         setupBackNavigation();
-        setupObservers();
         setupListeners();
         UiUtils.setupPasswordToggle(binding.btnToggleNewPassword, binding.etNewPassword);
         UiUtils.setupPasswordToggle(binding.btnToggleConfirmNewPassword, binding.etConfirmNewPassword);
@@ -60,7 +59,8 @@ public class ForgotPasswordActivity extends AppCompatActivity {
         });
     }
 
-    private void setupObservers() {
+    @Override
+    protected void setupObservers() {
         viewModel.isLoading.observe(this, loading -> {
             binding.progressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
             binding.btnSendCode.setEnabled(!loading);

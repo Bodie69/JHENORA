@@ -1,38 +1,35 @@
 package com.campus.campusmate.activities;
 
-import android.content.res.ColorStateList;
 import android.graphics.Color;
-import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.campus.campusmate.R;
+import com.campus.campusmate.base.BaseActivity;
 import com.campus.campusmate.databinding.ActivityRegisterBinding;
 import com.campus.campusmate.models.User;
 import com.campus.campusmate.utils.UiUtils;
-import com.campus.campusmate.utils.ValidationUtils;
 import com.campus.campusmate.viewmodels.AuthViewModel;
 
-public class RegisterActivity extends AppCompatActivity {
+public class RegisterActivity extends BaseActivity<ActivityRegisterBinding> {
 
-    private ActivityRegisterBinding binding;
     private AuthViewModel viewModel;
     private String selectedRole = User.ROLE_STUDENT;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        binding = ActivityRegisterBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+    protected ActivityRegisterBinding inflateBinding(LayoutInflater inflater) {
+        return ActivityRegisterBinding.inflate(inflater);
+    }
 
+    @Override
+    protected void setupViews() {
         viewModel = new ViewModelProvider(this).get(AuthViewModel.class);
 
         setupDropdowns();
         setupRoleToggle();
-        setupObservers();
         setupListeners();
         UiUtils.setupPasswordToggle(binding.btnTogglePassword, binding.etPassword);
         UiUtils.setupPasswordToggle(binding.btnToggleConfirmPassword, binding.etConfirmPassword);
@@ -59,7 +56,7 @@ public class RegisterActivity extends AppCompatActivity {
     private void switchRole(String role) {
         selectedRole = role;
         boolean isStudent = User.ROLE_STUDENT.equals(role);
-        
+
         binding.layoutStudentExtras.setVisibility(isStudent ? View.VISIBLE : View.GONE);
         binding.layoutFacultyExtras.setVisibility(isStudent ? View.GONE : View.VISIBLE);
 
@@ -70,7 +67,8 @@ public class RegisterActivity extends AppCompatActivity {
         binding.btnFaculty.setTextColor(isStudent ? getColor(R.color.text_secondary) : getColor(R.color.text_primary));
     }
 
-    private void setupObservers() {
+    @Override
+    protected void setupObservers() {
         viewModel.isLoading.observe(this, loading -> {
             binding.progressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
             binding.btnRegister.setEnabled(!loading);

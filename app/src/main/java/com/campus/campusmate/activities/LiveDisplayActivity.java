@@ -1,32 +1,31 @@
 package com.campus.campusmate.activities;
 
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+import com.campus.campusmate.base.BaseActivity;
 import com.campus.campusmate.databinding.ActivityLiveDisplayBinding;
 import com.campus.campusmate.models.Announcement;
 import com.campus.campusmate.models.Event;
-import com.campus.campusmate.repositories.AnnouncementRepository;
-import com.campus.campusmate.repositories.EventRepository;
 import com.campus.campusmate.utils.Constants;
 import com.campus.campusmate.utils.DateUtils;
+import com.campus.campusmate.viewmodels.LiveDisplayViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class LiveDisplayActivity extends AppCompatActivity {
+public class LiveDisplayActivity extends BaseActivity<ActivityLiveDisplayBinding> {
 
-    private ActivityLiveDisplayBinding binding;
+    private LiveDisplayViewModel viewModel;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private List<Announcement> announcements = new ArrayList<>();
     private List<Event> events = new ArrayList<>();
@@ -34,25 +33,32 @@ public class LiveDisplayActivity extends AppCompatActivity {
     private int eventIndex = 0;
     private boolean toggleFlag = false;
 
-    private final MutableLiveData<List<Announcement>> aLive = new MutableLiveData<>();
-    private final MutableLiveData<List<Event>> eLive = new MutableLiveData<>();
+    @Override
+    protected ActivityLiveDisplayBinding inflateBinding(LayoutInflater inflater) {
+        return ActivityLiveDisplayBinding.inflate(inflater);
+    }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        binding = ActivityLiveDisplayBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+    protected void setupViews() {
+        viewModel = new ViewModelProvider(this).get(LiveDisplayViewModel.class);
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         applyFullscreen();
 
-        AnnouncementRepository.getInstance().init(this);
-        EventRepository.getInstance().init(this);
-
-        setupDataStreams();
         startClock();
         startDataRefresh();
         startSlideShow();
+    }
+
+    @Override
+    protected void setupObservers() {
+        viewModel.announcements.observe(this, list -> {
+            if (list != null) announcements = list;
+        });
+
+        viewModel.events.observe(this, list -> {
+            if (list != null) events = list;
+        });
     }
 
     private void applyFullscreen() {
@@ -64,25 +70,6 @@ public class LiveDisplayActivity extends AppCompatActivity {
                         | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                         | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
         );
-    }
-
-    private void setupDataStreams() {
-        aLive.observe(this, list -> {
-            if (list != null) {
-                announcements = list;
-            }
-        });
-
-        eLive.observe(this, list -> {
-            if (list != null) {
-                events = list;
-            }
-        });
-    }
-
-    private void loadData() {
-        AnnouncementRepository.getInstance().observeApprovedAnnouncements(null, aLive);
-        EventRepository.getInstance().observeApprovedEvents(null, eLive);
     }
 
     private final Runnable clockRunnable = new Runnable() {
@@ -101,7 +88,7 @@ public class LiveDisplayActivity extends AppCompatActivity {
         Runnable refreshTask = new Runnable() {
             @Override
             public void run() {
-                loadData();
+                viewModel.loadData();
                 mainHandler.postDelayed(this, Constants.LIVE_DISPLAY_REFRESH_INTERVAL_MS);
             }
         };
@@ -141,7 +128,7 @@ public class LiveDisplayActivity extends AppCompatActivity {
             public void onAnimationEnd(Animation animation) {
                 int currAnn = announcements.size();
                 int currEv = events.size();
-                
+
                 if (currAnn == 0 && currEv == 0) {
                     binding.tvNoContent.setVisibility(View.VISIBLE);
                     binding.layoutSlide.setVisibility(View.GONE);

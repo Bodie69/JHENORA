@@ -1,35 +1,36 @@
 package com.campus.campusmate.activities;
 
 import android.content.Intent;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.LayoutInflater;
 
-import androidx.appcompat.app.AppCompatActivity;
-
+import com.campus.campusmate.base.BaseActivity;
 import com.campus.campusmate.databinding.ActivitySplashBinding;
 import com.campus.campusmate.notifications.NotificationHelper;
 import com.campus.campusmate.utils.Constants;
-import com.campus.campusmate.utils.SessionManager;
 
-public class SplashActivity extends AppCompatActivity {
+public class SplashActivity extends BaseActivity<ActivitySplashBinding> {
 
     private static final long SPLASH_DELAY = 2500L;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        ActivitySplashBinding binding = ActivitySplashBinding.inflate(getLayoutInflater());
-        setContentView(binding.getRoot());
+    protected ActivitySplashBinding inflateBinding(LayoutInflater inflater) {
+        return ActivitySplashBinding.inflate(inflater);
+    }
 
+    @Override
+    protected void setupViews() {
         NotificationHelper.requestPermission(this);
-
         new Handler(Looper.getMainLooper()).postDelayed(this::checkSession, SPLASH_DELAY);
     }
 
-    private void checkSession() {
-        SessionManager session = new SessionManager(this);
+    @Override
+    protected void setupObservers() {
+        // No ViewModel state to observe; session routing happens on a timed delay in setupViews().
+    }
 
+    private void checkSession() {
         if (session.isLoggedIn()) {
             routeByRole(session.getUserRole());
         } else {
