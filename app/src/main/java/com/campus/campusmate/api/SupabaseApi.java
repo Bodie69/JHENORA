@@ -1,5 +1,7 @@
 package com.campus.campusmate.api;
 
+import com.campus.campusmate.api.dto.CreateAccountResponse;
+import com.campus.campusmate.api.dto.CreateDisplayAccountRequest;
 import com.campus.campusmate.models.Announcement;
 import com.campus.campusmate.models.AuditLog;
 import com.campus.campusmate.models.Event;
@@ -109,4 +111,8 @@ public interface SupabaseApi {
     Call<Void> insertAuditLog(
             @Body AuditLog log,
             @Header("Prefer") String prefer);
+
+    // Edge Functions
+    @POST("functions/v1/create-display-account")
+    Call<CreateAccountResponse> createDisplayAccount(@Body CreateDisplayAccountRequest request);
 }

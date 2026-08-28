@@ -24,6 +24,7 @@ import com.campus.campusmate.fragments.admin.AdminApprovalsFragment;
 import com.campus.campusmate.fragments.admin.AdminDepartmentsFragment;
 import com.campus.campusmate.fragments.admin.AdminEventsFragment;
 import com.campus.campusmate.fragments.admin.AdminHomeFragment;
+import com.campus.campusmate.fragments.admin.AdminLiveDisplayFragment;
 import com.campus.campusmate.fragments.admin.AdminOrganizationsFragment;
 import com.campus.campusmate.fragments.admin.AdminStatisticsFragment;
 import com.campus.campusmate.fragments.admin.AdminUsersFragment;
@@ -39,7 +40,7 @@ public class AdminDashboardActivity extends BaseActivity<ActivityAdminDashboardB
     private Fragment activeFragment;
 
     private static final String[] TAB_TITLES = {
-            "Stats", "Approvals", "Users", "Orgs", "Bulletin", "Events", "Depts"
+            "Stats", "Approvals", "Users", "Orgs", "Bulletin", "Events", "Depts", "Display"
     };
 
     @Override
@@ -168,6 +169,7 @@ public class AdminDashboardActivity extends BaseActivity<ActivityAdminDashboardB
             else if (current == 2) selectedUsers = true;
             else if (current == 3) selectedUsers = true;
             else if (current == 6) selectedUsers = true;
+            else if (current == 7) selectedUsers = true;
             else if (current == 4) selectedProfile = true;
             else if (current == 5) selectedProfile = true;
         }
@@ -238,6 +240,7 @@ public class AdminDashboardActivity extends BaseActivity<ActivityAdminDashboardB
                 case 4: return new AdminAnnouncementsFragment();
                 case 5: return new AdminEventsFragment();
                 case 6: return new AdminDepartmentsFragment();
+                case 7: return new AdminLiveDisplayFragment();
                 default: return new AdminStatisticsFragment();
             }
         }

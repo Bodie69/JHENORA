@@ -32,6 +32,7 @@ public class AdminHomeFragment extends BaseFragment<FragmentAdminHomeBinding> {
         binding.cardBulletin.setOnClickListener(v -> notifySelected(4));
         binding.cardEvents.setOnClickListener(v -> notifySelected(5));
         binding.cardDepts.setOnClickListener(v -> notifySelected(6));
+        binding.cardLiveDisplay.setOnClickListener(v -> notifySelected(7));
     }
 
     @Override

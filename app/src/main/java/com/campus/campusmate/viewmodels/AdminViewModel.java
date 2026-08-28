@@ -23,6 +23,7 @@ public class AdminViewModel extends AndroidViewModel {
 
     public final MutableLiveData<List<User>> allUsers = new MutableLiveData<>(new ArrayList<>());
     public final MutableLiveData<List<User>> pendingUsers = new MutableLiveData<>(new ArrayList<>());
+    public final MutableLiveData<List<User>> displayAccounts = new MutableLiveData<>(new ArrayList<>());
     public final MutableLiveData<List<Organization>> organizations = new MutableLiveData<>(new ArrayList<>());
     public final MutableLiveData<Boolean> isLoading = new MutableLiveData<>(false);
     public final MutableLiveData<String> errorMessage = new MutableLiveData<>();
@@ -46,14 +47,35 @@ public class AdminViewModel extends AndroidViewModel {
             if (users != null) {
                 totalUsers.postValue(users.size());
                 int faculty = 0, students = 0, pending = 0;
+                List<User> displays = new ArrayList<>();
                 for (User u : users) {
                     if (User.ROLE_FACULTY.equals(u.getRole())) faculty++;
                     if (User.ROLE_STUDENT.equals(u.getRole())) students++;
                     if (User.STATUS_PENDING.equals(u.getStatus())) pending++;
+                    if (User.ROLE_LIVE_DISPLAY.equals(u.getRole())) displays.add(u);
                 }
                 totalFaculty.postValue(faculty);
                 totalStudents.postValue(students);
                 pendingCount.postValue(pending);
+                displayAccounts.postValue(displays);
+            }
+        });
+    }
+
+    public void createDisplayAccount(String email, String password, String label) {
+        isLoading.setValue(true);
+        userRepo.createDisplayAccount(email, password, label, new UserRepository.OnCompleteListener() {
+            @Override
+            public void onSuccess() {
+                loadAllUsers();
+                isLoading.postValue(false);
+                successMessage.postValue("Display account created");
+            }
+
+            @Override
+            public void onError(String message) {
+                isLoading.postValue(false);
+                errorMessage.postValue(message);
             }
         });
     }

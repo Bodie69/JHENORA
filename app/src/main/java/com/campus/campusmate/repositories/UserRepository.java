@@ -8,6 +8,8 @@ import com.campus.campusmate.api.SupabaseApi;
 import com.campus.campusmate.api.SupabaseAuthApi;
 import com.campus.campusmate.api.dto.AuthRequest;
 import com.campus.campusmate.api.dto.AuthResponse;
+import com.campus.campusmate.api.dto.CreateAccountResponse;
+import com.campus.campusmate.api.dto.CreateDisplayAccountRequest;
 import com.campus.campusmate.api.dto.EmailRequest;
 import com.campus.campusmate.api.dto.SupabaseUser;
 import com.campus.campusmate.api.dto.UpdatePasswordRequest;
@@ -392,6 +394,46 @@ public class UserRepository extends BaseRepository {
                 listener.onError("Update failed");
             }
         });
+    }
+
+    // --- Admin: Display accounts ---
+
+    /**
+     * Creates a dedicated "live_display" login for a signage kiosk device via the
+     * create-display-account Edge Function, which runs with the service-role key so this
+     * doesn't authenticate the caller as the new account (unlike {@link #registerUser}).
+     */
+    public void createDisplayAccount(String email, String password, String label, OnCompleteListener listener) {
+        String sanitizedEmail = InputSanitizer.sanitizeEmail(email);
+        dataApi.createDisplayAccount(new CreateDisplayAccountRequest(sanitizedEmail, password, label))
+                .enqueue(new Callback<CreateAccountResponse>() {
+                    @Override
+                    public void onResponse(Call<CreateAccountResponse> call, Response<CreateAccountResponse> response) {
+                        CreateAccountResponse body = response.body();
+                        if (response.isSuccessful() && body != null && body.success) {
+                            listener.onSuccess();
+                            return;
+                        }
+
+                        String message = "Failed to create display account";
+                        try {
+                            if (response.errorBody() != null) {
+                                String raw = response.errorBody().string();
+                                String parsed = new org.json.JSONObject(raw).optString("error", null);
+                                if (parsed != null && !parsed.isEmpty()) message = parsed;
+                            }
+                        } catch (Exception e) {
+                            Timber.e(e, "Failed to read create-display-account error body");
+                        }
+                        Timber.e("Create display account failed (" + response.code() + "): " + message);
+                        listener.onError(message);
+                    }
+
+                    @Override
+                    public void onFailure(Call<CreateAccountResponse> call, Throwable t) {
+                        listener.onError(t.getMessage());
+                    }
+                });
     }
 
     // --- Admin: Fetch all users ---
