@@ -2,7 +2,6 @@ package com.campus.campusmate.services;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.work.Worker;
@@ -19,11 +18,11 @@ import java.util.List;
 import java.util.Map;
 
 import retrofit2.Response;
+import timber.log.Timber;
 
 /** Periodic background check for new approved content and post status changes. */
 public class SyncWorker extends Worker {
 
-    private static final String TAG = "SyncWorker";
     private static final String PREFS = "campusmate_sync_prefs";
     private static final String KEY_LAST_ANNOUNCEMENT = "last_announcement_created_at";
     private static final String KEY_LAST_EVENT = "last_event_created_at";
@@ -44,8 +43,8 @@ public class SyncWorker extends Worker {
         SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
 
         try {
-            Log.d(TAG, "Starting periodic sync for user: " + session.getUserEmail());
-            
+            Timber.d("Starting periodic sync");
+
             checkAnnouncements(context, session, prefs);
             checkEvents(context, session, prefs);
             
@@ -59,7 +58,7 @@ public class SyncWorker extends Worker {
             
             return Result.success();
         } catch (Exception e) {
-            Log.e(TAG, "Sync error: " + e.getMessage(), e);
+            Timber.e(e, "Sync error");
             return Result.retry();
         }
     }

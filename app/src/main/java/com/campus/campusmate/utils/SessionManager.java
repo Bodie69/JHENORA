@@ -2,7 +2,6 @@ package com.campus.campusmate.utils;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.util.Log;
 
 import androidx.security.crypto.EncryptedSharedPreferences;
 import androidx.security.crypto.MasterKey;
@@ -12,15 +11,15 @@ import com.campus.campusmate.models.User;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 
+import timber.log.Timber;
+
 /**
  * Manager class for handling user sessions and authentication tokens.
  * It uses EncryptedSharedPreferences to persist sensitive user information locally.
  */
 public class SessionManager {
 
-    private static final String TAG = "SessionManager";
     private SharedPreferences prefs;
-    private SharedPreferences.Editor editor;
 
     /**
      * Initializes the SessionManager with a Context using EncryptedSharedPreferences.
@@ -40,12 +39,10 @@ public class SessionManager {
                     EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                     EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             );
-            editor = prefs.edit();
         } catch (GeneralSecurityException | IOException e) {
-            Log.e(TAG, "Error initializing EncryptedSharedPreferences", e);
+            Timber.e(e, "Error initializing EncryptedSharedPreferences");
             // Fallback to regular SharedPreferences if encryption fails (though not ideal for security)
             prefs = context.getSharedPreferences(Constants.PREF_NAME, Context.MODE_PRIVATE);
-            editor = prefs.edit();
         }
     }
 
@@ -55,6 +52,7 @@ public class SessionManager {
      * @param user The user object containing session data.
      */
     public void saveSession(User user) {
+        SharedPreferences.Editor editor = prefs.edit();
         editor.putString(Constants.PREF_USER_ID, user.getUid());
         editor.putString(Constants.PREF_USER_ROLE, user.getRole());
         editor.putString(Constants.PREF_USER_EMAIL, user.getEmail());
@@ -83,6 +81,7 @@ public class SessionManager {
      * @param email    The email to remember.
      */
     public void saveRememberMe(boolean remember, String email) {
+        SharedPreferences.Editor editor = prefs.edit();
         editor.putBoolean(Constants.PREF_REMEMBER_ME, remember);
         if (remember) {
             editor.putString(Constants.PREF_USER_EMAIL, email);
@@ -115,6 +114,7 @@ public class SessionManager {
     public void clearSession() {
         String email = getSavedEmail();
         boolean rememberMe = isRememberMe();
+        SharedPreferences.Editor editor = prefs.edit();
         editor.clear();
         if (rememberMe) {
             editor.putBoolean(Constants.PREF_REMEMBER_ME, true);
@@ -130,6 +130,7 @@ public class SessionManager {
      * @param refreshToken The refresh token string.
      */
     public void saveTokens(String accessToken, String refreshToken) {
+        SharedPreferences.Editor editor = prefs.edit();
         editor.putString(Constants.PREF_ACCESS_TOKEN, accessToken);
         editor.putString(Constants.PREF_REFRESH_TOKEN, refreshToken);
         editor.apply();
@@ -282,8 +283,7 @@ public class SessionManager {
      * @return True if the change was successfully committed.
      */
     public boolean setNotificationEnabled(String channel, boolean enabled) {
-        editor.putBoolean(channel, enabled);
-        return editor.commit();
+        return prefs.edit().putBoolean(channel, enabled).commit();
     }
 
     /**

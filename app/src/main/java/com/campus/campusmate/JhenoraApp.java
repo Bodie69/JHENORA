@@ -14,11 +14,16 @@ import com.campus.campusmate.services.SyncWorker;
 
 import java.util.concurrent.TimeUnit;
 
+import timber.log.Timber;
+
 public class JhenoraApp extends Application {
 
     @Override
     public void onCreate() {
         super.onCreate();
+        if (BuildConfig.DEBUG) {
+            Timber.plant(new Timber.DebugTree());
+        }
         RepositoryProvider.init(this);
         NotificationHelper.createChannels(this);
         scheduleSync();

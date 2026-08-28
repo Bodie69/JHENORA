@@ -64,6 +64,7 @@ dependencies {
     implementation(libs.glide)
     implementation(libs.work.runtime)
     implementation(libs.security.crypto)
+    implementation(libs.timber)
     annotationProcessor(libs.glide.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

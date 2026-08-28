@@ -18,6 +18,8 @@ import com.campus.campusmate.utils.InputSanitizer;
 import com.campus.campusmate.utils.SessionManager;
 import com.campus.campusmate.utils.SupabaseManager;
 
+import timber.log.Timber;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +53,7 @@ public class UserRepository extends BaseRepository {
         // Ensure no stale session interferes with the sign-up call.
         session.saveTokens(null, null);
 
-        android.util.Log.d("UserRepository", "Registering new account via Supabase Auth");
+        Timber.d("Registering new account via Supabase Auth");
 
         authApi.signUp(new AuthRequest(sanitizedEmail, password)).enqueue(new Callback<AuthResponse>() {
             @Override
@@ -60,9 +62,11 @@ public class UserRepository extends BaseRepository {
                     String errorBody = "No details";
                     try {
                         if (response.errorBody() != null) errorBody = response.errorBody().string();
-                    } catch (Exception ignored) {}
+                    } catch (Exception e) {
+                        Timber.e(e, "Failed to read sign-up error body");
+                    }
 
-                    android.util.Log.e("UserRepository", "Auth sign-up FAILED " + response.code() + ": " + errorBody);
+                    Timber.e("Auth sign-up FAILED " + response.code() + ": " + errorBody);
 
                     if (response.code() == 422 || errorBody.toLowerCase(java.util.Locale.ROOT).contains("already registered")) {
                         listener.onError("Email address is already registered");
@@ -109,8 +113,10 @@ public class UserRepository extends BaseRepository {
                             String errorBody = "No details";
                             try {
                                 if (response.errorBody() != null) errorBody = response.errorBody().string();
-                            } catch (Exception ignored) {}
-                            android.util.Log.e("UserRepository", "Profile insert FAILED " + response.code() + ": " + errorBody);
+                            } catch (Exception e) {
+                                Timber.e(e, "Failed to read profile-insert error body");
+                            }
+                            Timber.e("Profile insert FAILED " + response.code() + ": " + errorBody);
                             session.saveTokens(null, null);
                             listener.onError("Registration failed: " + errorBody);
                         }
@@ -137,13 +143,13 @@ public class UserRepository extends BaseRepository {
         // Ensure no stale tokens interfere with the sign-in call itself.
         session.saveTokens(null, null);
 
-        android.util.Log.d("UserRepository", "Attempting login");
+        Timber.d("Attempting login");
 
         authApi.signIn("password", new AuthRequest(sanitizedEmail, password)).enqueue(new Callback<AuthResponse>() {
             @Override
             public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
                 if (!response.isSuccessful() || response.body() == null || !response.body().isSuccess()) {
-                    android.util.Log.w("UserRepository", "Sign-in failed: " + response.code());
+                    Timber.w("Sign-in failed: " + response.code());
                     listener.onError("invalid_credentials");
                     return;
                 }
@@ -159,10 +165,10 @@ public class UserRepository extends BaseRepository {
                     public void onResponse(Call<List<User>> call, Response<List<User>> response) {
                         if (response.isSuccessful() && response.body() != null && !response.body().isEmpty()) {
                             User user = response.body().get(0);
-                            android.util.Log.d("UserRepository", "Login profile loaded");
+                            Timber.d("Login profile loaded");
                             finishLogin(user, listener);
                         } else {
-                            android.util.Log.e("UserRepository", "No profile row for authenticated user");
+                            Timber.e("No profile row for authenticated user");
                             session.saveTokens(null, null);
                             listener.onError("server_error");
                         }
@@ -170,7 +176,7 @@ public class UserRepository extends BaseRepository {
 
                     @Override
                     public void onFailure(Call<List<User>> call, Throwable t) {
-                        android.util.Log.e("UserRepository", "Profile fetch network failure: " + t.getMessage());
+                        Timber.e("Profile fetch network failure: " + t.getMessage());
                         session.saveTokens(null, null);
                         listener.onError("network_error");
                     }
@@ -179,7 +185,7 @@ public class UserRepository extends BaseRepository {
 
             @Override
             public void onFailure(Call<AuthResponse> call, Throwable t) {
-                android.util.Log.e("UserRepository", "Login network failure: " + t.getMessage());
+                Timber.e("Login network failure: " + t.getMessage());
                 listener.onError("network_error");
             }
         });
@@ -292,7 +298,7 @@ public class UserRepository extends BaseRepository {
         Map<String, String> filter = new HashMap<>();
         filter.put("uid", "eq." + uid);
 
-        android.util.Log.d("UserRepository", "Fetching user profile");
+        Timber.d("Fetching user profile");
 
         dataApi.getUsers(filter).enqueue(new Callback<List<User>>() {
             @Override
@@ -300,23 +306,27 @@ public class UserRepository extends BaseRepository {
                 if (response.isSuccessful() && response.body() != null) {
                     if (!response.body().isEmpty()) {
                         User user = response.body().get(0);
-                        android.util.Log.d("UserRepository", "Profile found");
+                        Timber.d("Profile found");
                         listener.onFetched(user);
                     } else {
-                        android.util.Log.w("UserRepository", "Profile not found for requested user");
+                        Timber.w("Profile not found for requested user");
                         listener.onError("user_not_found");
                     }
                 } else {
                     String error = "Unknown";
-                    try { if (response.errorBody() != null) error = response.errorBody().string(); } catch (Exception ignored) {}
-                    android.util.Log.e("UserRepository", "Fetch failed: " + error);
+                    try {
+                        if (response.errorBody() != null) error = response.errorBody().string();
+                    } catch (Exception e) {
+                        Timber.e(e, "Failed to read profile-fetch error body");
+                    }
+                    Timber.e("Fetch failed: " + error);
                     listener.onError(error);
                 }
             }
 
             @Override
             public void onFailure(Call<List<User>> call, Throwable t) {
-                android.util.Log.e("UserRepository", "Network Failure: " + t.getMessage());
+                Timber.e("Network Failure: " + t.getMessage());
                 listener.onError(t.getMessage());
             }
         });
@@ -334,7 +344,7 @@ public class UserRepository extends BaseRepository {
         filter.put("uid", "eq." + uid);
         Map<String, Object> fields = buildUserPatch(user);
 
-        android.util.Log.d("UserRepository", "Updating user profile");
+        Timber.d("Updating user profile");
 
         dataApi.patchUserMap(filter, fields, "return=minimal").enqueue(new Callback<Void>() {
             @Override
@@ -346,9 +356,11 @@ public class UserRepository extends BaseRepository {
                     try {
                         if (response.errorBody() != null) {
                             errorBody = response.errorBody().string();
-                            android.util.Log.e("UserRepository", "Update Error " + response.code() + ": " + errorBody);
+                            Timber.e("Update Error " + response.code() + ": " + errorBody);
                         }
-                    } catch (Exception ignored) {}
+                    } catch (Exception e) {
+                        Timber.e(e, "Failed to read profile-update error body");
+                    }
                     listener.onError(errorBody);
                 }
             }
