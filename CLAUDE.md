@@ -15,7 +15,7 @@ Production Android app for Romblon State University centralizing announcements, 
 - **Notifications**: Local Android notifications via WorkManager + AlarmManager
 - **Logging**: Timber
 - **DI**: Manual repository injection (no Hilt/Dagger)
-- **minSdk**: 26, **targetSdk**: 35
+- **minSdk**: 26, **targetSdk**: 36
 
 ## Architecture Layers
 
@@ -58,7 +58,7 @@ iOS Human Interface Guidelines inspired.
 - **faculty**: Create/edit/delete own announcements & events, view profile, receive updates, view post history. New faculty accounts start as **pending verification**.
 - **organization**: Create/edit/delete own announcements & events, receive updates.
 - **student**: Read announcements/events, calendar, search, filter, receive notifications, profile.
-- **display**: Dedicated read-only account for campus live signage — displays approved announcements/events, auto-refreshes.
+- **live_display**: Dedicated read-only account for campus live signage — displays approved announcements/events, auto-refreshes.
 
 ## Departments
 
