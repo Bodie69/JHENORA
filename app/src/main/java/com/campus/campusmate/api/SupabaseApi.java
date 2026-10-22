@@ -2,8 +2,10 @@ package com.campus.campusmate.api;
 
 import com.campus.campusmate.api.dto.CreateAccountResponse;
 import com.campus.campusmate.api.dto.CreateDisplayAccountRequest;
+import com.campus.campusmate.api.dto.DeleteUserRequest;
 import com.campus.campusmate.models.Announcement;
 import com.campus.campusmate.models.AuditLog;
+import com.campus.campusmate.models.Department;
 import com.campus.campusmate.models.Event;
 import com.campus.campusmate.models.Organization;
 import com.campus.campusmate.models.User;
@@ -66,6 +68,12 @@ public interface SupabaseApi {
     @GET("rest/v1/users")
     Call<List<User>> getUsers(@QueryMap Map<String, String> filters);
 
+    /** Range-header'd variant of {@link #getUsers}, used for chunked bulk fetches. */
+    @GET("rest/v1/users")
+    Call<List<User>> getUsersPaged(
+            @QueryMap Map<String, String> filters,
+            @Header("Range") String range);
+
     @POST("rest/v1/users")
     Call<Void> insertUser(
             @Body User user,
@@ -92,6 +100,12 @@ public interface SupabaseApi {
     @GET("rest/v1/organizations")
     Call<List<Organization>> getOrganizations(@QueryMap Map<String, String> filters);
 
+    /** Range-header'd variant of {@link #getOrganizations}, used for chunked bulk fetches. */
+    @GET("rest/v1/organizations")
+    Call<List<Organization>> getOrganizationsPaged(
+            @QueryMap Map<String, String> filters,
+            @Header("Range") String range);
+
     @POST("rest/v1/organizations")
     Call<Void> insertOrganization(
             @Body Organization organization,
@@ -106,6 +120,16 @@ public interface SupabaseApi {
     @DELETE("rest/v1/organizations")
     Call<Void> deleteOrganization(@QueryMap Map<String, String> filters);
 
+    // Departments
+    @GET("rest/v1/departments")
+    Call<List<Department>> getDepartments(@QueryMap Map<String, String> filters);
+
+    @PATCH("rest/v1/departments")
+    Call<Void> patchDepartment(
+            @QueryMap Map<String, String> filters,
+            @Body Map<String, Object> fields,
+            @Header("Prefer") String prefer);
+
     // Audit logs
     @POST("rest/v1/audit_logs")
     Call<Void> insertAuditLog(
@@ -115,4 +139,8 @@ public interface SupabaseApi {
     // Edge Functions
     @POST("functions/v1/create-display-account")
     Call<CreateAccountResponse> createDisplayAccount(@Body CreateDisplayAccountRequest request);
+
+    /** Admin-only; see supabase/functions/delete-user. Deletes the auth login and cascades. */
+    @POST("functions/v1/delete-user")
+    Call<CreateAccountResponse> deleteUser(@Body DeleteUserRequest request);
 }

@@ -65,9 +65,24 @@ public class AdminApprovalsFragment extends Fragment {
         setupSearch();
         setupObservers();
 
+        loadData();
+    }
+
+    private void loadData() {
         announcementViewModel.loadPendingAnnouncements();
         eventViewModel.loadPendingEvents();
         adminViewModel.loadPendingUsers();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // This tab's ViewPager2 page is kept alive (not recreated) while another tab is
+        // shown, so without this, pending items submitted or actioned elsewhere (another
+        // admin, another device) would sit stale here until the app is force-restarted.
+        if (announcementViewModel != null && eventViewModel != null && adminViewModel != null) {
+            loadData();
+        }
     }
 
     private void setupRecyclerView() {
@@ -137,12 +152,26 @@ public class AdminApprovalsFragment extends Fragment {
             submitMergedList();
         });
 
-        announcementViewModel.successMessage.observe(getViewLifecycleOwner(), msg -> {
-            if (msg != null) UiUtils.showToast(requireContext(), msg);
+        announcementViewModel.successMessage.observe(getViewLifecycleOwner(), msgEvent -> {
+            String msg = msgEvent != null ? msgEvent.getContentIfNotHandled() : null;
+            if (msg == null) return;
+            UiUtils.showToast(requireContext(), msg);
+            // The item was just approved/rejected — reload so it drops off this list
+            // immediately instead of sitting here stale until the tab is revisited.
+            announcementViewModel.loadPendingAnnouncements();
         });
 
-        eventViewModel.successMessage.observe(getViewLifecycleOwner(), msg -> {
-            if (msg != null) UiUtils.showToast(requireContext(), msg);
+        eventViewModel.successMessage.observe(getViewLifecycleOwner(), msgEvent -> {
+            String msg = msgEvent != null ? msgEvent.getContentIfNotHandled() : null;
+            if (msg == null) return;
+            UiUtils.showToast(requireContext(), msg);
+            eventViewModel.loadPendingEvents();
+        });
+
+        // The dashboard shows (and consumes) the message itself; here we only refresh the
+        // pending list after any admin action succeeds, so don't consume the event.
+        adminViewModel.successMessage.observe(getViewLifecycleOwner(), event -> {
+            if (event != null) adminViewModel.loadPendingUsers();
         });
     }
 

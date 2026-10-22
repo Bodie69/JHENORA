@@ -37,6 +37,10 @@ public class Announcement {
     private String category;
     private String rejectionReason;
     private String approvedBy;
+    /** Real date/time this announcement is about, set via a date/time picker (unlike the
+     *  free-text {@link #when}) — 0 if unset. Drives Live Display's time-bomb expiry. */
+    @SerializedName("event_date")
+    private long eventDate;
     private long createdAt;
     private long updatedAt;
     private long approvedAt;
@@ -61,6 +65,9 @@ public class Announcement {
     public boolean isUrgent() { return PRIORITY_URGENT.equals(priority); }
     public boolean isHighPriority() { return PRIORITY_HIGH.equals(priority); }
     public boolean isGeneralVisibility() { return VISIBILITY_GENERAL.equals(visibility); }
+    /** True once {@link #eventDate} has passed. False (never "past" on this basis) when
+     *  eventDate is unset — callers fall back to their own age-based cutoff in that case. */
+    public boolean isPast() { return eventDate > 0 && eventDate < System.currentTimeMillis(); }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -100,6 +107,8 @@ public class Announcement {
     public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
     public String getApprovedBy() { return approvedBy; }
     public void setApprovedBy(String approvedBy) { this.approvedBy = approvedBy; }
+    public long getEventDate() { return eventDate; }
+    public void setEventDate(long eventDate) { this.eventDate = eventDate; }
     public long getCreatedAt() { return createdAt; }
     public void setCreatedAt(long createdAt) { this.createdAt = createdAt; }
     public long getUpdatedAt() { return updatedAt; }

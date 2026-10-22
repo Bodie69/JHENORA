@@ -1,10 +1,13 @@
 package com.campus.campusmate.activities;
 
+import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.view.LayoutInflater;
 import android.view.View;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.campus.campusmate.R;
@@ -23,12 +26,28 @@ import com.campus.campusmate.viewmodels.ForgotPasswordViewModel;
 public class ForgotPasswordActivity extends BaseActivity<ActivityForgotPasswordBinding> {
 
     private static final long RESEND_COOLDOWN_MS = 60_000L;
+    private static final String KEY_STEP = "current_step";
+    private static final String KEY_EMAIL = "current_email";
 
     private ForgotPasswordViewModel viewModel;
 
     private int currentStep = 1;
     private String currentEmail = "";
     private CountDownTimer resendTimer;
+    /** True while the 60s resend cooldown is running; shared by both the step-1 "Send Code"
+     *  button and the step-2 "Resend" link since they trigger the same sendOtp() call. */
+    private boolean cooldownActive = false;
+
+    /** Stashed here (before super.onCreate() runs setupViews()) so step/email survive a
+     *  configuration change instead of silently resetting to step 1 with a blank email while
+     *  the ViewModel's LiveData still reports the later step as already reached. */
+    private Bundle pendingState;
+
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        pendingState = savedInstanceState;
+        super.onCreate(savedInstanceState);
+    }
 
     @Override
     protected ActivityForgotPasswordBinding inflateBinding(LayoutInflater inflater) {
@@ -43,6 +62,27 @@ public class ForgotPasswordActivity extends BaseActivity<ActivityForgotPasswordB
         setupListeners();
         UiUtils.setupPasswordToggle(binding.btnToggleNewPassword, binding.etNewPassword);
         UiUtils.setupPasswordToggle(binding.btnToggleConfirmNewPassword, binding.etConfirmNewPassword);
+        restoreState();
+    }
+
+    private void restoreState() {
+        if (pendingState == null) return;
+        currentStep = pendingState.getInt(KEY_STEP, 1);
+        currentEmail = pendingState.getString(KEY_EMAIL, "");
+        pendingState = null;
+
+        binding.etEmail.setText(currentEmail);
+        if (currentStep >= 2) {
+            binding.tvOtpSubtitle.setText(getString(R.string.subtitle_verify_code) + "\n" + currentEmail);
+        }
+        goToStep(currentStep);
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt(KEY_STEP, currentStep);
+        outState.putString(KEY_EMAIL, currentEmail);
     }
 
     private void setupBackNavigation() {
@@ -63,14 +103,17 @@ public class ForgotPasswordActivity extends BaseActivity<ActivityForgotPasswordB
     protected void setupObservers() {
         viewModel.isLoading.observe(this, loading -> {
             binding.progressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
-            binding.btnSendCode.setEnabled(!loading);
+            // btnSendCode also stays disabled through the resend cooldown, independent of
+            // loading state (e.g. verifying the OTP briefly toggles isLoading and would
+            // otherwise re-enable it while the cooldown is still running).
+            binding.btnSendCode.setEnabled(!loading && !cooldownActive);
             binding.btnVerifyCode.setEnabled(!loading);
             binding.btnResetPassword.setEnabled(!loading);
         });
 
         viewModel.otpSent.observe(this, sent -> {
             if (!Boolean.TRUE.equals(sent)) return;
-            UiUtils.showToast(this, getString(R.string.success_otp_sent));
+            UiUtils.showLongToast(this, getString(R.string.success_otp_sent));
             if (currentStep == 1) {
                 binding.tvOtpSubtitle.setText(getString(R.string.subtitle_verify_code) + "\n" + currentEmail);
                 goToStep(2);
@@ -88,7 +131,8 @@ public class ForgotPasswordActivity extends BaseActivity<ActivityForgotPasswordB
             finish();
         });
 
-        viewModel.errorMessage.observe(this, error -> {
+        viewModel.errorMessage.observe(this, errorEvent -> {
+            String error = errorEvent != null ? errorEvent.getContentIfNotHandled() : null;
             if (error != null) UiUtils.showSnackbar(binding.getRoot(), error);
         });
     }
@@ -104,6 +148,15 @@ public class ForgotPasswordActivity extends BaseActivity<ActivityForgotPasswordB
     }
 
     private void attemptSendCode() {
+        // Guards against bypassing the resend cooldown by backing out to step 1 and tapping
+        // "Send Code" again — that hit the same sendOtp() call as the step-2 resend link, just
+        // without the cooldown check, so a user could hammer Supabase's recovery-email endpoint
+        // by going back and forth. The button is also disabled while cooldownActive is true;
+        // this is a defensive second check against races/accessibility taps.
+        if (cooldownActive) {
+            UiUtils.showToast(this, getString(R.string.error_otp_cooldown_active));
+            return;
+        }
         String email = InputSanitizer.sanitizeEmail(binding.etEmail.getText().toString());
         if (!ValidationUtils.isValidEmail(email)) {
             UiUtils.showToast(this, getString(R.string.error_invalid_email));
@@ -146,7 +199,9 @@ public class ForgotPasswordActivity extends BaseActivity<ActivityForgotPasswordB
 
     private void startResendCooldown() {
         if (resendTimer != null) resendTimer.cancel();
+        cooldownActive = true;
         binding.tvResendCode.setEnabled(false);
+        binding.btnSendCode.setEnabled(false);
         resendTimer = new CountDownTimer(RESEND_COOLDOWN_MS, 1_000L) {
             @Override
             public void onTick(long millisUntilFinished) {
@@ -156,8 +211,10 @@ public class ForgotPasswordActivity extends BaseActivity<ActivityForgotPasswordB
 
             @Override
             public void onFinish() {
+                cooldownActive = false;
                 binding.tvResendCode.setText(R.string.btn_resend_code);
                 binding.tvResendCode.setEnabled(true);
+                binding.btnSendCode.setEnabled(true);
             }
         }.start();
     }

@@ -20,6 +20,7 @@ import com.campus.campusmate.R;
 import com.campus.campusmate.activities.AdminDashboardActivity;
 import com.campus.campusmate.activities.AnnouncementDetailActivity;
 import com.campus.campusmate.activities.EventDetailActivity;
+import com.campus.campusmate.services.RealtimeService;
 import com.campus.campusmate.utils.Constants;
 import com.campus.campusmate.utils.SessionManager;
 
@@ -40,6 +41,25 @@ public final class NotificationHelper {
                 "Approvals", "Items awaiting admin approval"));
         manager.createNotificationChannel(channel(Constants.CHANNEL_UPDATES,
                 "Updates", "General JHENORA updates"));
+    }
+
+    /**
+     * Creates the minimal-priority channel {@link RealtimeService}'s persistent "listening for
+     * updates" notification posts to. Separate from {@link #createChannels}/app startup since
+     * this channel only needs to exist once the realtime service actually runs, and must be
+     * {@code IMPORTANCE_MIN} (silent, no badge) — the other channels default to
+     * {@code IMPORTANCE_DEFAULT}, which would make this always-on notification chime.
+     */
+    public static void ensureRealtimeChannel(Context context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
+        NotificationManager manager = context.getSystemService(NotificationManager.class);
+        if (manager == null || manager.getNotificationChannel(Constants.CHANNEL_REALTIME) != null) return;
+
+        NotificationChannel channel = new NotificationChannel(Constants.CHANNEL_REALTIME,
+                "Live Sync", NotificationManager.IMPORTANCE_MIN);
+        channel.setDescription("Keeps approval notifications instant while JHENORA runs in the background");
+        channel.setShowBadge(false);
+        manager.createNotificationChannel(channel);
     }
 
     /**
@@ -85,16 +105,26 @@ public final class NotificationHelper {
                 R.drawable.ic_announcements, title, body, intent);
     }
 
-    public static void notifyPostApproved(Context context, String title, String body) {
+    /** {@code postId} keys the notification so distinct posts get their own notification
+     *  instead of one hardcoded id silently overwriting another's. */
+    public static void notifyPostApproved(Context context, String title, String body, String postId) {
         Intent intent = new Intent(context, com.campus.campusmate.activities.MainActivity.class);
-        show(context, Constants.CHANNEL_UPDATES, 2001,
+        show(context, Constants.CHANNEL_UPDATES, postNotificationId(postId, 2001),
                 R.drawable.ic_shield_check, title, body, intent);
     }
 
-    public static void notifyPostRejected(Context context, String title, String body) {
+    /** {@code postId} keys the notification so distinct posts get their own notification
+     *  instead of one hardcoded id silently overwriting another's. */
+    public static void notifyPostRejected(Context context, String title, String body, String postId) {
         Intent intent = new Intent(context, com.campus.campusmate.activities.MainActivity.class);
-        show(context, Constants.CHANNEL_UPDATES, 2002,
+        show(context, Constants.CHANNEL_UPDATES, postNotificationId(postId, 2002),
                 R.drawable.ic_announcements, title, body, intent);
+    }
+
+    /** Stable per-post notification id, falling back to {@code fallback} when {@code postId}
+     *  is unavailable (rare — e.g. a malformed realtime payload). */
+    private static int postNotificationId(String postId, int fallback) {
+        return postId == null || postId.isEmpty() ? fallback : (2000_000 + Math.abs(postId.hashCode() % 1_000_000));
     }
 
     private static void show(Context context, String channelId, int notificationId, int smallIcon,

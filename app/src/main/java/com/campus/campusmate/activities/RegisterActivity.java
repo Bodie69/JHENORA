@@ -81,7 +81,8 @@ public class RegisterActivity extends BaseActivity<ActivityRegisterBinding> {
             }
         });
 
-        viewModel.errorMessage.observe(this, error -> {
+        viewModel.errorMessage.observe(this, errorEvent -> {
+            String error = errorEvent != null ? errorEvent.getContentIfNotHandled() : null;
             if (error != null) UiUtils.showSnackbar(binding.getRoot(), error);
         });
     }

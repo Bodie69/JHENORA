@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- View tag: department whose logo DepartmentLogos last bound to a label. -->
+    <item name="tag_department_logo" type="id" />
+</resources>

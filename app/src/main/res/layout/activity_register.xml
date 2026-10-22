@@ -5,11 +5,19 @@
     android:layout_height="match_parent"
     android:background="@color/background">
 
-    <!-- Background Gradient Accent -->
+    <!-- Hero band: blurred campus photo under a brand-blue wash (matches Welcome). -->
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="220dp"
+        android:contentDescription="@null"
+        android:scaleType="centerCrop"
+        android:src="@drawable/header_campus"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <View
         android:layout_width="match_parent"
         android:layout_height="220dp"
-        android:background="@drawable/bg_primary_gradient"
+        android:background="@drawable/bg_welcome_hero_scrim"
         app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.core.widget.NestedScrollView
@@ -354,7 +362,6 @@
                         android:textSize="17sp"
                         android:textStyle="bold"
                         app:cornerRadius="16dp"
-                        app:backgroundTint="@color/primary"
                         app:elevation="4dp" />
 
                 </LinearLayout>

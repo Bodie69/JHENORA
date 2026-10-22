@@ -22,18 +22,19 @@ public class MainActivityTest {
 
     @Test
     public void testNavigationToCalendar() {
-        // Assuming BottomNavigationView has an item with id nav_calendar
-        Espresso.onView(ViewMatchers.withId(R.id.nav_calendar))
+        // Updated to match activity_main.xml IDs
+        Espresso.onView(ViewMatchers.withId(R.id.btn_nav_calendar))
                 .perform(ViewActions.click());
 
-        // Check if the calendar view is displayed
-        Espresso.onView(ViewMatchers.withId(R.id.calendar_view))
+        // Check if the calendar dates RecyclerView is displayed
+        Espresso.onView(ViewMatchers.withId(R.id.rv_dates))
                 .check(ViewAssertions.matches(ViewMatchers.isDisplayed()));
     }
 
     @Test
     public void testNavigationToAnnouncements() {
-        Espresso.onView(ViewMatchers.withId(R.id.nav_announcements))
+        // Updated to match activity_main.xml IDs
+        Espresso.onView(ViewMatchers.withId(R.id.btn_nav_announcements))
                 .perform(ViewActions.click());
 
         Espresso.onView(ViewMatchers.withId(R.id.rv_announcements))

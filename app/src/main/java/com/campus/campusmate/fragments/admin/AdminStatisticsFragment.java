@@ -50,8 +50,24 @@ public class AdminStatisticsFragment extends Fragment {
         eventViewModel = new ViewModelProvider(requireActivity()).get(EventViewModel.class);
 
         setupObservers();
+        loadData();
+    }
+
+    private void loadData() {
+        adminViewModel.loadAllUsers();
         announcementViewModel.loadAllAnnouncements();
         eventViewModel.loadAllEvents();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // This tab's ViewPager2 page is kept alive (not recreated) while another tab is
+        // shown, so without this, counts would freeze at whatever they were on first open
+        // instead of reflecting activity elsewhere.
+        if (adminViewModel != null && announcementViewModel != null && eventViewModel != null) {
+            loadData();
+        }
     }
 
     private void setupObservers() {

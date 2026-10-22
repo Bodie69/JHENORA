@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Files shared through FileProvider. camera/ holds the temporary capture the camera app
+     writes when taking a profile photo; each capture overwrites the previous one. -->
+<paths>
+    <cache-path name="camera" path="camera/" />
+</paths>

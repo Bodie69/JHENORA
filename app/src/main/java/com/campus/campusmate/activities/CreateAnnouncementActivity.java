@@ -14,11 +14,18 @@ import com.campus.campusmate.base.BaseActivity;
 import com.campus.campusmate.databinding.ActivityCreateAnnouncementBinding;
 import com.campus.campusmate.models.Announcement;
 import com.campus.campusmate.utils.Constants;
+import com.campus.campusmate.utils.DateUtils;
 import com.campus.campusmate.utils.InputSanitizer;
 import com.campus.campusmate.utils.UiUtils;
 import com.campus.campusmate.utils.ValidationUtils;
 import com.campus.campusmate.viewmodels.AnnouncementViewModel;
 import com.bumptech.glide.Glide;
+import com.google.android.material.datepicker.MaterialDatePicker;
+import com.google.android.material.timepicker.MaterialTimePicker;
+import com.google.android.material.timepicker.TimeFormat;
+
+import java.util.Calendar;
+import java.util.TimeZone;
 
 public class CreateAnnouncementActivity extends BaseActivity<ActivityCreateAnnouncementBinding> {
 
@@ -27,6 +34,10 @@ public class CreateAnnouncementActivity extends BaseActivity<ActivityCreateAnnou
     private String editAnnouncementId;
     private boolean isEdit;
     private Announcement editingAnnouncement;
+    /** Real timestamp behind the "Date & time" field — 0 until the picker sets one. Synced
+     *  into {@link Announcement#setEventDate} (for the time bomb) and, formatted, into
+     *  {@link Announcement#setWhen} (for existing free-text display spots) on submit. */
+    private long selectedEventDate = 0;
 
     private final ActivityResultLauncher<String> imagePickerLauncher =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
@@ -63,10 +74,15 @@ public class CreateAnnouncementActivity extends BaseActivity<ActivityCreateAnnou
         editingAnnouncement = a;
         binding.etTitle.setText(a.getTitle());
         binding.etWhat.setText(a.getWhat());
-        binding.etWho.setText(a.getWho());
-        binding.etWhen.setText(a.getWhen());
+        if (a.getEventDate() > 0) {
+            selectedEventDate = a.getEventDate();
+            binding.etWhen.setText(DateUtils.formatDateTime(selectedEventDate));
+        } else {
+            // Legacy row from before event_date existed: show its old free-text value, but
+            // the picker starts fresh (selectedEventDate stays 0) rather than trying to parse it.
+            binding.etWhen.setText(a.getWhen());
+        }
         binding.etWhere.setText(a.getWhere());
-        binding.etWhy.setText(a.getWhy());
         binding.etAdditionalInfo.setText(a.getAdditionalInfo());
 
         if (Announcement.PRIORITY_URGENT.equals(a.getPriority())) {
@@ -118,13 +134,15 @@ public class CreateAnnouncementActivity extends BaseActivity<ActivityCreateAnnou
             binding.progressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
             binding.btnSubmit.setEnabled(!loading);
         });
-        viewModel.successMessage.observe(this, msg -> {
+        viewModel.successMessage.observe(this, msgEvent -> {
+            String msg = msgEvent != null ? msgEvent.getContentIfNotHandled() : null;
             if (msg != null) {
                 UiUtils.showToast(this, msg);
                 finish();
             }
         });
-        viewModel.errorMessage.observe(this, msg -> {
+        viewModel.errorMessage.observe(this, msgEvent -> {
+            String msg = msgEvent != null ? msgEvent.getContentIfNotHandled() : null;
             if (msg != null) UiUtils.showSnackbar(binding.getRoot(), msg);
         });
         viewModel.loadedAnnouncement.observe(this, a -> {
@@ -136,6 +154,45 @@ public class CreateAnnouncementActivity extends BaseActivity<ActivityCreateAnnou
         binding.btnBack.setOnClickListener(v -> finish());
         binding.btnAddImage.setOnClickListener(v -> imagePickerLauncher.launch("image/*"));
         binding.btnSubmit.setOnClickListener(v -> attemptSubmit());
+
+        binding.etWhen.setOnClickListener(v -> showDateTimePicker());
+        binding.tilWhen.setEndIconOnClickListener(v -> showDateTimePicker());
+    }
+
+    /** Date step, then a time step for that date — combined into one timestamp so the "Date &
+     *  time" field carries a real, structured moment instead of free text a reader had to
+     *  interpret themselves. */
+    private void showDateTimePicker() {
+        MaterialDatePicker<Long> datePicker = MaterialDatePicker.Builder.datePicker()
+                .setTitleText(getString(R.string.hint_date_time))
+                .setSelection(selectedEventDate > 0 ? selectedEventDate : MaterialDatePicker.todayInUtcMilliseconds())
+                .build();
+        datePicker.addOnPositiveButtonClickListener(selectionUtc -> {
+            Calendar utc = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+            utc.setTimeInMillis(selectionUtc);
+
+            Calendar prior = Calendar.getInstance();
+            if (selectedEventDate > 0) prior.setTimeInMillis(selectedEventDate);
+            int hour = selectedEventDate > 0 ? prior.get(Calendar.HOUR_OF_DAY) : 9;
+            int minute = selectedEventDate > 0 ? prior.get(Calendar.MINUTE) : 0;
+
+            MaterialTimePicker timePicker = new MaterialTimePicker.Builder()
+                    .setTimeFormat(TimeFormat.CLOCK_12H)
+                    .setHour(hour)
+                    .setMinute(minute)
+                    .setTitleText(R.string.hint_date_time)
+                    .build();
+            timePicker.addOnPositiveButtonClickListener(v -> {
+                Calendar local = Calendar.getInstance();
+                local.set(utc.get(Calendar.YEAR), utc.get(Calendar.MONTH), utc.get(Calendar.DAY_OF_MONTH),
+                        timePicker.getHour(), timePicker.getMinute(), 0);
+                local.set(Calendar.MILLISECOND, 0);
+                selectedEventDate = local.getTimeInMillis();
+                binding.etWhen.setText(DateUtils.formatDateTime(selectedEventDate));
+            });
+            timePicker.show(getSupportFragmentManager(), "when_time_picker");
+        });
+        datePicker.show(getSupportFragmentManager(), "when_date_picker");
     }
 
     private void attemptSubmit() {
@@ -155,10 +212,9 @@ public class CreateAnnouncementActivity extends BaseActivity<ActivityCreateAnnou
                 session.getUserId(), session.getUserName(), session.getUserRole());
         a.setTitle(title);
         a.setWhat(what);
-        a.setWho(InputSanitizer.sanitize(binding.etWho.getText().toString()));
-        a.setWhen(InputSanitizer.sanitize(binding.etWhen.getText().toString()));
+        a.setEventDate(selectedEventDate);
+        a.setWhen(selectedEventDate > 0 ? DateUtils.formatDateTime(selectedEventDate) : null);
         a.setWhere(InputSanitizer.sanitize(binding.etWhere.getText().toString()));
-        a.setWhy(InputSanitizer.sanitize(binding.etWhy.getText().toString()));
         a.setAdditionalInfo(InputSanitizer.sanitizeMultiline(binding.etAdditionalInfo.getText().toString()));
         a.setDepartment(session.getUserDepartment());
 

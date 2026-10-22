@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Scrim over the Live Display campus photo: a light navy wash, slightly stronger at the
+     top under the header, so the photo stays visible but never competes with the card. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="270"
+        android:startColor="#8000237A"
+        android:centerColor="#3300237A"
+        android:endColor="#5900237A"
+        android:type="linear" />
+</shape>

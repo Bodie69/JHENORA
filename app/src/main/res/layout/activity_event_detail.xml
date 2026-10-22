@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background">
+    android:background="@color/m3_surface_container_low">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -25,6 +25,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:contentDescription="Event image"
+                android:foreground="?attr/selectableItemBackground"
                 android:scaleType="centerCrop"
                 android:visibility="gone" />
 
@@ -40,6 +41,16 @@
                 app:tint="@color/white" />
 
         </FrameLayout>
+
+        <!-- Body card overlapping the hero for a layered, modern look -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="-20dp"
+            app:cardBackgroundColor="@color/m3_surface"
+            app:cardCornerRadius="@dimen/corner_xl"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -65,9 +76,12 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_tag"
+                    android:ellipsize="end"
+                    android:maxWidth="160dp"
                     android:paddingHorizontal="10dp"
                     android:paddingVertical="4dp"
-                    android:textColor="@color/primary"
+                    android:singleLine="true"
+                    android:textColor="@color/m3_on_primary_container"
                     android:textSize="@dimen/text_xs"
                     android:textStyle="bold" />
 
@@ -78,7 +92,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/spacing_sm"
-                android:textColor="@color/text_primary"
+                android:textColor="@color/m3_on_surface"
                 android:textSize="@dimen/text_2xl"
                 android:textStyle="bold" />
 
@@ -93,7 +107,10 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:textColor="@color/text_secondary"
+                    android:layout_marginEnd="@dimen/spacing_sm"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/m3_on_surface_variant"
                     android:textSize="@dimen/text_sm" />
 
                 <TextView
@@ -106,98 +123,59 @@
             </LinearLayout>
 
             <!-- Event date display -->
-            <TextView
-                android:id="@+id/tv_event_date"
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_event_date"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="@dimen/spacing_base"
-                android:textColor="@color/primary"
-                android:textSize="@dimen/text_base"
-                android:textStyle="bold"
-                android:visibility="gone" />
+                app:cardBackgroundColor="@color/m3_primary_container"
+                app:cardCornerRadius="@dimen/corner_md"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
 
-            <!-- What -->
+                <TextView
+                    android:id="@+id/tv_event_date"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/spacing_md"
+                    android:drawablePadding="8dp"
+                    android:textColor="@color/m3_on_primary_container"
+                    android:textSize="@dimen/text_base"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Description -->
             <LinearLayout
                 android:id="@+id/row_what"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/spacing_md"
+                android:layout_marginBottom="@dimen/spacing_lg"
                 android:orientation="vertical">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="What"
-                    android:textColor="@color/text_hint"
+                    android:text="Description"
+                    android:textColor="@color/m3_primary"
                     android:textSize="@dimen/text_xs"
                     android:textStyle="bold"
+                    android:letterSpacing="0.06"
                     android:textAllCaps="true" />
 
                 <TextView
                     android:id="@+id/tv_what_value"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textColor="@color/text_primary"
-                    android:textSize="@dimen/text_base" />
+                    android:layout_marginTop="4dp"
+                    android:textColor="@color/m3_on_surface"
+                    android:textSize="@dimen/text_base"
+                    android:lineSpacingExtra="2dp" />
 
             </LinearLayout>
 
-            <!-- Who -->
-            <LinearLayout
-                android:id="@+id/row_who"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/spacing_md"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Who"
-                    android:textColor="@color/text_hint"
-                    android:textSize="@dimen/text_xs"
-                    android:textStyle="bold"
-                    android:textAllCaps="true" />
-
-                <TextView
-                    android:id="@+id/tv_who_value"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textColor="@color/text_primary"
-                    android:textSize="@dimen/text_base" />
-
-            </LinearLayout>
-
-            <!-- When -->
-            <LinearLayout
-                android:id="@+id/row_when"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/spacing_md"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="When"
-                    android:textColor="@color/text_hint"
-                    android:textSize="@dimen/text_xs"
-                    android:textStyle="bold"
-                    android:textAllCaps="true" />
-
-                <TextView
-                    android:id="@+id/tv_when_value"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textColor="@color/text_primary"
-                    android:textSize="@dimen/text_base" />
-
-            </LinearLayout>
-
-            <!-- Where -->
+            <!-- Location -->
             <LinearLayout
                 android:id="@+id/row_where"
                 android:layout_width="match_parent"
@@ -208,45 +186,19 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Where"
-                    android:textColor="@color/text_hint"
+                    android:text="Location"
+                    android:textColor="@color/m3_primary"
                     android:textSize="@dimen/text_xs"
                     android:textStyle="bold"
+                    android:letterSpacing="0.06"
                     android:textAllCaps="true" />
 
                 <TextView
                     android:id="@+id/tv_where_value"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textColor="@color/text_primary"
-                    android:textSize="@dimen/text_base" />
-
-            </LinearLayout>
-
-            <!-- Why -->
-            <LinearLayout
-                android:id="@+id/row_why"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/spacing_md"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Why"
-                    android:textColor="@color/text_hint"
-                    android:textSize="@dimen/text_xs"
-                    android:textStyle="bold"
-                    android:textAllCaps="true" />
-
-                <TextView
-                    android:id="@+id/tv_why_value"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textColor="@color/text_primary"
+                    android:layout_marginTop="4dp"
+                    android:textColor="@color/m3_on_surface"
                     android:textSize="@dimen/text_base" />
 
             </LinearLayout>
@@ -290,6 +242,8 @@
             </LinearLayout>
 
         </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
 
         <ProgressBar
             android:id="@+id/progress_bar"

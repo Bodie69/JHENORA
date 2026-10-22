@@ -4,6 +4,7 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -11,9 +12,12 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.campus.campusmate.R;
 import com.campus.campusmate.models.Event;
 import com.campus.campusmate.utils.DateUtils;
+import com.campus.campusmate.utils.Constants;
+import com.campus.campusmate.utils.DepartmentLogos;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -90,6 +94,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.ViewHolder> 
         private final TextView tvDept;
         private final TextView tvStatus;
         private final View statusDot;
+        private final ImageView ivThumbnail;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -102,6 +107,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.ViewHolder> 
             tvDept = itemView.findViewById(R.id.tv_dept);
             tvStatus = itemView.findViewById(R.id.tv_status);
             statusDot = itemView.findViewById(R.id.status_dot);
+            ivThumbnail = itemView.findViewById(R.id.iv_thumbnail);
         }
 
         void bind(Event e) {
@@ -118,10 +124,10 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.ViewHolder> 
             if (tvAuthor != null) tvAuthor.setText(e.getAuthorName() != null ? e.getAuthorName() : "");
 
             if (tvDept != null) {
-                String dept = Event.VISIBILITY_GENERAL.equals(e.getVisibility())
-                        ? context.getString(R.string.label_general)
-                        : e.getDepartment();
+                boolean isGeneral = Event.VISIBILITY_GENERAL.equals(e.getVisibility());
+                String dept = isGeneral ? context.getString(R.string.label_general) : e.getDepartment();
                 tvDept.setText(dept != null ? dept : "");
+                DepartmentLogos.bind(tvDept, isGeneral ? Constants.DEPT_GENERAL : e.getDepartment());
             }
 
             if (tvStatus != null) {
@@ -147,6 +153,15 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.ViewHolder> 
                         tvStatus.setText(R.string.status_rejected);
                         tvStatus.setTextColor(context.getColor(R.color.danger));
                         break;
+                }
+            }
+
+            if (ivThumbnail != null) {
+                if (e.getImageUrl() != null && !e.getImageUrl().isEmpty()) {
+                    ivThumbnail.setVisibility(View.VISIBLE);
+                    Glide.with(context).load(e.getImageUrl()).centerCrop().into(ivThumbnail);
+                } else {
+                    ivThumbnail.setVisibility(View.GONE);
                 }
             }
 

@@ -57,7 +57,8 @@ public class LoginActivity extends BaseActivity<ActivityLoginBinding> {
             }
         });
 
-        viewModel.errorMessage.observe(this, error -> {
+        viewModel.errorMessage.observe(this, errorEvent -> {
+            String error = errorEvent != null ? errorEvent.getContentIfNotHandled() : null;
             if (error == null) return;
             switch (error) {
                 case "email_not_verified":

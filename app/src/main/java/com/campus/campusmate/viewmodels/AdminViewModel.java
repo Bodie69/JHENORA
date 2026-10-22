@@ -1,15 +1,21 @@
 package com.campus.campusmate.viewmodels;
 
 import android.app.Application;
+import android.net.Uri;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.MutableLiveData;
 
+import com.campus.campusmate.models.Department;
 import com.campus.campusmate.models.Organization;
 import com.campus.campusmate.models.User;
+import com.campus.campusmate.repositories.DepartmentRepository;
 import com.campus.campusmate.repositories.OrganizationRepository;
 import com.campus.campusmate.repositories.UserRepository;
+import com.campus.campusmate.utils.Constants;
+import com.campus.campusmate.utils.Event;
+import com.campus.campusmate.utils.SupabaseStorage;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,14 +26,24 @@ public class AdminViewModel extends AndroidViewModel {
 
     private final UserRepository userRepo;
     private final OrganizationRepository orgRepo;
+    private final DepartmentRepository deptRepo;
 
     public final MutableLiveData<List<User>> allUsers = new MutableLiveData<>(new ArrayList<>());
     public final MutableLiveData<List<User>> pendingUsers = new MutableLiveData<>(new ArrayList<>());
     public final MutableLiveData<List<User>> displayAccounts = new MutableLiveData<>(new ArrayList<>());
     public final MutableLiveData<List<Organization>> organizations = new MutableLiveData<>(new ArrayList<>());
+    /** {@code null} after a failed load, so the UI can show an error instead of an empty list. */
+    public final MutableLiveData<List<Department>> departments = new MutableLiveData<>(new ArrayList<>());
+    /** Id of the department whose logo is currently uploading, or {@code null} when idle. */
+    public final MutableLiveData<String> uploadingDepartmentId = new MutableLiveData<>();
     public final MutableLiveData<Boolean> isLoading = new MutableLiveData<>(false);
-    public final MutableLiveData<String> errorMessage = new MutableLiveData<>();
-    public final MutableLiveData<String> successMessage = new MutableLiveData<>();
+    /**
+     * One-time messages for the admin UI, shown once by AdminDashboardActivity. Wrapped in
+     * {@link Event} because this ViewModel is shared by every admin tab and LiveData replays
+     * its last value to each re-attached observer (old messages would otherwise reappear).
+     */
+    public final MutableLiveData<Event<String>> errorMessage = new MutableLiveData<>();
+    public final MutableLiveData<Event<String>> successMessage = new MutableLiveData<>();
 
     // Dashboard stats
     public final MutableLiveData<Integer> totalUsers = new MutableLiveData<>(0);
@@ -42,6 +58,8 @@ public class AdminViewModel extends AndroidViewModel {
         userRepo.init(application);
         orgRepo = OrganizationRepository.getInstance();
         orgRepo.init(application);
+        deptRepo = DepartmentRepository.getInstance();
+        deptRepo.init(application);
 
         allUsers.observeForever(users -> {
             if (users != null) {
@@ -69,13 +87,13 @@ public class AdminViewModel extends AndroidViewModel {
             public void onSuccess() {
                 loadAllUsers();
                 isLoading.postValue(false);
-                successMessage.postValue("Display account created");
+                successMessage.postValue(new Event<>("Display account created"));
             }
 
             @Override
             public void onError(String message) {
                 isLoading.postValue(false);
-                errorMessage.postValue(message);
+                errorMessage.postValue(new Event<>(message));
             }
         });
     }
@@ -95,6 +113,104 @@ public class AdminViewModel extends AndroidViewModel {
         });
     }
 
+    public void loadDepartments() {
+        deptRepo.observeDepartments(departments);
+    }
+
+    /**
+     * Department whose logo is being picked. Held here (not in the fragment) so the photo
+     * picker's result still finds its department if the screen is recreated meanwhile.
+     */
+    private Department pendingLogoDepartment;
+
+    public void setPendingLogoDepartment(Department department) {
+        pendingLogoDepartment = department;
+    }
+
+    /** Uploads {@code imageUri} for the department chosen via {@link #setPendingLogoDepartment}. */
+    public void uploadPendingDepartmentLogo(Uri imageUri) {
+        Department department = pendingLogoDepartment;
+        pendingLogoDepartment = null;
+        if (department != null) uploadDepartmentLogo(department, imageUri);
+    }
+
+    /**
+     * Uploads {@code imageUri} as the department's logo — trimmed of blank margins and centred
+     * on a square PNG by {@link SupabaseStorage#uploadLogo} so it fills the circular frame —
+     * then saves its public URL on the department row.
+     */
+    public void uploadDepartmentLogo(Department department, Uri imageUri) {
+        uploadingDepartmentId.setValue(department.getId());
+        SupabaseStorage.uploadLogo(getApplication(), imageUri, Constants.STORAGE_DEPARTMENTS,
+                new SupabaseStorage.UploadCallback() {
+                    @Override
+                    public void onSuccess(String publicUrl) {
+                        saveDepartmentLogo(department, publicUrl, "Logo updated for " + department.getCode());
+                    }
+
+                    @Override
+                    public void onFailure(String message) {
+                        uploadingDepartmentId.postValue(null);
+                        errorMessage.postValue(new Event<>("Logo upload failed: " + message));
+                    }
+                });
+    }
+
+    public void removeDepartmentLogo(Department department) {
+        uploadingDepartmentId.setValue(department.getId());
+        saveDepartmentLogo(department, null, "Logo removed from " + department.getCode());
+    }
+
+    private void saveDepartmentLogo(Department department, String logoUrl, String successText) {
+        String previousUrl = department.getLogoUrl();
+        deptRepo.updateLogo(department.getId(), logoUrl, new DepartmentRepository.OnSimpleListener() {
+            @Override
+            public void onSuccess() {
+                // The old file is no longer referenced; remove it so storage doesn't fill
+                // up with orphaned logos.
+                if (previousUrl != null && !previousUrl.isEmpty() && !previousUrl.equals(logoUrl)) {
+                    SupabaseStorage.deleteByPublicUrl(getApplication(), previousUrl);
+                }
+                uploadingDepartmentId.postValue(null);
+                successMessage.postValue(new Event<>(successText));
+                loadDepartments();
+            }
+
+            @Override
+            public void onError(String message) {
+                // The row still points at the old logo, so the freshly uploaded file is the
+                // orphan here.
+                if (logoUrl != null) SupabaseStorage.deleteByPublicUrl(getApplication(), logoUrl);
+                uploadingDepartmentId.postValue(null);
+                errorMessage.postValue(new Event<>(message));
+            }
+        });
+    }
+
+    /** Permanently deletes a non-admin user's account and everything they posted. */
+    public void deleteUser(User user) {
+        isLoading.setValue(true);
+        userRepo.deleteUser(user.getUid(), new UserRepository.OnCompleteListener() {
+            @Override
+            public void onSuccess() {
+                loadAllUsers();
+                loadPendingUsers();
+                // Their organization leadership was cleared server-side. (Not loadOrganizations():
+                // that registers another observeForever each call.)
+                orgRepo.observeAllOrganizations(organizations);
+                isLoading.postValue(false);
+                String name = user.getFullName();
+                successMessage.postValue(new Event<>((name.isEmpty() ? user.getEmail() : name) + " deleted"));
+            }
+
+            @Override
+            public void onError(String message) {
+                isLoading.postValue(false);
+                errorMessage.postValue(new Event<>(message));
+            }
+        });
+    }
+
     public void approveUser(String uid) {
         isLoading.setValue(true);
         userRepo.updateUserStatus(uid, User.STATUS_APPROVED, new UserRepository.OnCompleteListener() {
@@ -103,13 +219,13 @@ public class AdminViewModel extends AndroidViewModel {
                 loadAllUsers();
                 loadPendingUsers();
                 isLoading.postValue(false);
-                successMessage.postValue("User approved");
+                successMessage.postValue(new Event<>("User approved"));
             }
 
             @Override
             public void onError(String message) {
                 isLoading.postValue(false);
-                errorMessage.postValue(message);
+                errorMessage.postValue(new Event<>(message));
             }
         });
     }
@@ -122,13 +238,13 @@ public class AdminViewModel extends AndroidViewModel {
                 loadAllUsers();
                 loadPendingUsers();
                 isLoading.postValue(false);
-                successMessage.postValue("User rejected");
+                successMessage.postValue(new Event<>("User rejected"));
             }
 
             @Override
             public void onError(String message) {
                 isLoading.postValue(false);
-                errorMessage.postValue(message);
+                errorMessage.postValue(new Event<>(message));
             }
         });
     }
@@ -139,13 +255,13 @@ public class AdminViewModel extends AndroidViewModel {
             @Override
             public void onSuccess() {
                 loadOrganizations();
-                successMessage.postValue("Organization approved");
+                successMessage.postValue(new Event<>("Organization approved"));
             }
 
             @Override
             public void onError(String message) {
                 isLoading.postValue(false);
-                errorMessage.postValue(message);
+                errorMessage.postValue(new Event<>(message));
             }
         });
     }
@@ -166,7 +282,7 @@ public class AdminViewModel extends AndroidViewModel {
             @Override
             public void onError(String message) {
                 isLoading.postValue(false);
-                errorMessage.postValue(message);
+                errorMessage.postValue(new Event<>(message));
             }
         });
     }
@@ -190,7 +306,7 @@ public class AdminViewModel extends AndroidViewModel {
             @Override
             public void onError(String message) {
                 isLoading.postValue(false);
-                errorMessage.postValue(message);
+                errorMessage.postValue(new Event<>(message));
             }
         });
     }
@@ -208,7 +324,7 @@ public class AdminViewModel extends AndroidViewModel {
             if (leaderChanged) unlinkOrgLeader(previousLeaderId);
             loadOrganizations();
             isLoading.postValue(false);
-            successMessage.postValue("Organization " + verb);
+            successMessage.postValue(new Event<>("Organization " + verb));
             return;
         }
 
@@ -228,14 +344,14 @@ public class AdminViewModel extends AndroidViewModel {
                 loadOrganizations();
                 loadAllUsers();
                 isLoading.postValue(false);
-                successMessage.postValue("Organization " + verb + " and student assigned");
+                successMessage.postValue(new Event<>("Organization " + verb + " and student assigned"));
             }
 
             @Override
             public void onError(String message) {
                 loadOrganizations();
                 isLoading.postValue(false);
-                errorMessage.postValue("Org " + verb + ", but failed to assign student: " + message);
+                errorMessage.postValue(new Event<>("Org " + verb + ", but failed to assign student: " + message));
             }
         });
     }
@@ -276,18 +392,23 @@ public class AdminViewModel extends AndroidViewModel {
             public void onSuccess() {
                 loadOrganizations();
                 isLoading.postValue(false);
-                successMessage.postValue("Organization deleted");
+                successMessage.postValue(new Event<>("Organization deleted"));
             }
 
             @Override
             public void onError(String message) {
                 isLoading.postValue(false);
-                errorMessage.postValue(message);
+                errorMessage.postValue(new Event<>(message));
             }
         });
     }
 
-    public List<User> filterUsers(List<User> all, String role, String query) {
+    /**
+     * Users matching {@code role} and {@code dept} (empty or null for any) whose name, email or
+     * department contains {@code query}. Pending accounts are excluded: they are handled on
+     * the Approvals page until approved or rejected.
+     */
+    public List<User> filterUsers(List<User> all, String role, String dept, String query) {
         if (all == null) return new ArrayList<>();
         List<User> result = new ArrayList<>();
         String q = query != null ? query.toLowerCase().trim() : "";
@@ -295,11 +416,12 @@ public class AdminViewModel extends AndroidViewModel {
             // Pending users are handled on the Approvals page until approved/rejected.
             if (User.STATUS_PENDING.equals(u.getStatus())) continue;
             boolean matchRole = role == null || role.isEmpty() || role.equals(u.getRole());
+            boolean matchDept = dept == null || dept.isEmpty() || dept.equalsIgnoreCase(u.getDepartment());
             boolean matchQuery = q.isEmpty()
                     || (u.getFullName().toLowerCase().contains(q))
                     || (u.getEmail() != null && u.getEmail().toLowerCase().contains(q))
                     || (u.getDepartment() != null && u.getDepartment().toLowerCase().contains(q));
-            if (matchRole && matchQuery) result.add(u);
+            if (matchRole && matchDept && matchQuery) result.add(u);
         }
         return result;
     }

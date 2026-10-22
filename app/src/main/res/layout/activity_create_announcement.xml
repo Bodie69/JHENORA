@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background">
+    android:background="@color/m3_surface_container_low">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -27,7 +27,7 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Back"
                 android:src="@drawable/ic_arrow_back"
-                app:tint="@color/text_primary" />
+                app:tint="@color/m3_on_surface" />
 
             <TextView
                 android:id="@+id/tv_screen_title"
@@ -36,21 +36,22 @@
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
                 android:text="@string/title_create_announcement"
-                android:textColor="@color/text_primary"
+                android:textColor="@color/m3_on_surface"
                 android:textSize="@dimen/text_xl"
                 android:textStyle="bold" />
 
         </LinearLayout>
 
         <!-- Image picker card -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="160dp"
             android:layout_marginBottom="@dimen/spacing_base"
+            app:cardBackgroundColor="@color/m3_surface_container"
             app:cardCornerRadius="@dimen/corner_lg"
             app:cardElevation="0dp"
-            app:strokeColor="@color/gray_200"
-            app:strokeWidth="1.5dp">
+            app:strokeColor="@color/m3_outline_variant"
+            app:strokeWidth="1dp">
 
             <FrameLayout
                 android:layout_width="match_parent"
@@ -66,25 +67,32 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_add_image"
-                    style="@style/Widget.JHENORA.Button.Outlined"
+                    style="@style/Widget.JHENORA.Button.Tonal"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
+                    android:layout_height="40dp"
                     android:layout_gravity="center"
                     android:text="@string/btn_add_image"
-                    android:textSize="@dimen/text_sm" />
+                    android:textSize="@dimen/text_sm"
+                    app:icon="@drawable/ic_image"
+                    app:iconGravity="textStart" />
 
             </FrameLayout>
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <!-- Form card -->
-        <androidx.cardview.widget.CardView
+        <!-- Section: Details -->
+        <TextView
+            style="@style/TextStyle.JHENORA.SectionTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_sm"
+            android:text="@string/section_details" />
+
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.JHENORA.Card.Outlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardCornerRadius="@dimen/corner_lg"
-            app:cardElevation="0dp"
-            app:strokeColor="@color/gray_200"
-            app:strokeWidth="1.5dp">
+            android:layout_marginBottom="@dimen/spacing_lg">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -97,7 +105,6 @@
                     style="@style/Widget.JHENORA.TextInputLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/spacing_md"
                     android:hint="@string/hint_announcement_title">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -114,8 +121,8 @@
                     style="@style/Widget.JHENORA.TextInputLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/spacing_md"
-                    android:hint="@string/hint_what">
+                    android:layout_marginTop="@dimen/spacing_md"
+                    android:hint="@string/hint_description">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/et_what"
@@ -123,7 +130,7 @@
                         android:layout_height="wrap_content"
                         android:gravity="top"
                         android:inputType="textMultiLine|textCapSentences"
-                        android:minLines="3" />
+                        android:minLines="4" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -131,38 +138,8 @@
                     style="@style/Widget.JHENORA.TextInputLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/spacing_md"
-                    android:hint="@string/hint_who">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/et_who"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="textCapSentences" />
-
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.JHENORA.TextInputLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/spacing_md"
-                    android:hint="@string/hint_when">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/et_when"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="textCapSentences" />
-
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.JHENORA.TextInputLayout"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/spacing_md"
-                    android:hint="@string/hint_where">
+                    android:layout_marginTop="@dimen/spacing_md"
+                    android:hint="@string/hint_location">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/et_where"
@@ -173,27 +150,52 @@
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/til_when"
                     style="@style/Widget.JHENORA.TextInputLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/spacing_md"
-                    android:hint="@string/hint_why">
+                    android:layout_marginTop="@dimen/spacing_md"
+                    android:hint="@string/hint_date_time"
+                    app:endIconMode="custom"
+                    app:endIconDrawable="@drawable/ic_calendar"
+                    app:endIconTint="@color/m3_on_surface_variant">
 
                     <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/et_why"
+                        android:id="@+id/et_when"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:gravity="top"
-                        android:inputType="textMultiLine|textCapSentences"
-                        android:minLines="2" />
+                        android:focusable="false"
+                        android:inputType="none" />
 
                 </com.google.android.material.textfield.TextInputLayout>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Section: Visibility & Priority -->
+        <TextView
+            style="@style/TextStyle.JHENORA.SectionTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_sm"
+            android:text="@string/section_settings" />
+
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.JHENORA.Card.Outlined"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/spacing_base">
 
                 <com.google.android.material.textfield.TextInputLayout
                     style="@style/Widget.JHENORA.TextInputLayout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/spacing_md"
                     android:hint="@string/hint_how">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -208,32 +210,32 @@
 
                 <!-- Priority dropdown -->
                 <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                    style="@style/Widget.JHENORA.TextInputLayout.ExposedDropdownMenu"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/spacing_md"
+                    android:layout_marginTop="@dimen/spacing_md"
                     android:hint="@string/hint_priority">
 
                     <AutoCompleteTextView
                         android:id="@+id/ac_priority"
                         android:layout_width="match_parent"
-                        android:layout_height="@dimen/input_height"
+                        android:layout_height="wrap_content"
                         android:inputType="none" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <!-- Visibility dropdown -->
                 <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                    style="@style/Widget.JHENORA.TextInputLayout.ExposedDropdownMenu"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/spacing_md"
+                    android:layout_marginTop="@dimen/spacing_md"
                     android:hint="@string/hint_visibility">
 
                     <AutoCompleteTextView
                         android:id="@+id/ac_visibility"
                         android:layout_width="match_parent"
-                        android:layout_height="@dimen/input_height"
+                        android:layout_height="wrap_content"
                         android:inputType="none" />
 
                 </com.google.android.material.textfield.TextInputLayout>
@@ -241,24 +243,24 @@
                 <!-- Department (shown when visibility=department) -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/layout_department"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                    style="@style/Widget.JHENORA.TextInputLayout.ExposedDropdownMenu"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="@dimen/spacing_md"
+                    android:layout_marginTop="@dimen/spacing_md"
                     android:hint="@string/hint_department"
                     android:visibility="gone">
 
                     <AutoCompleteTextView
                         android:id="@+id/ac_department"
                         android:layout_width="match_parent"
-                        android:layout_height="@dimen/input_height"
+                        android:layout_height="wrap_content"
                         android:inputType="none" />
 
                 </com.google.android.material.textfield.TextInputLayout>
 
             </LinearLayout>
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_submit"

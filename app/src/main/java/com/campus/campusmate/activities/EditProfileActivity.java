@@ -69,14 +69,16 @@ public class EditProfileActivity extends BaseActivity<ActivityEditProfileBinding
             binding.btnSave.setEnabled(!loading);
         });
 
-        viewModel.successMessage.observe(this, msg -> {
+        viewModel.successMessage.observe(this, msgEvent -> {
+            String msg = msgEvent != null ? msgEvent.getContentIfNotHandled() : null;
             if (msg != null) {
                 UiUtils.showToast(this, msg);
                 finish();
             }
         });
 
-        viewModel.errorMessage.observe(this, error -> {
+        viewModel.errorMessage.observe(this, errorEvent -> {
+            String error = errorEvent != null ? errorEvent.getContentIfNotHandled() : null;
             if (error != null) {
                 if ("user_not_found".equals(error)) {
                     handleStaleSession();

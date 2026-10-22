@@ -16,22 +16,71 @@
         android:orientation="horizontal"
         android:padding="@dimen/spacing_base">
 
-        <LinearLayout
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="@drawable/bg_circle_primary"
-            android:gravity="center"
-            android:layout_marginEnd="@dimen/spacing_base">
+        <!-- Logo slot: uploaded logo when present, otherwise the department code badge.
+             The slot itself is the upload button (the small badge hints that it's tappable). -->
+        <FrameLayout
+            android:id="@+id/frame_logo"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_marginEnd="@dimen/spacing_base"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/dept_logo_actions">
 
-            <TextView
-                android:id="@+id/tv_code"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="@color/white"
-                android:textSize="@dimen/text_xs"
-                android:textStyle="bold" />
+            <LinearLayout
+                android:id="@+id/layout_code_badge"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_circle_primary"
+                android:gravity="center">
 
-        </LinearLayout>
+                <TextView
+                    android:id="@+id/tv_code"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/white"
+                    android:textSize="@dimen/text_xs"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+            <!-- Uploaded logos are pre-trimmed and centred on a square PNG at upload time
+                 (SupabaseStorage.uploadLogo), so centerCrop fills the circle edge to edge.
+                 Circular white backing shows through transparent logos; the hairline ring
+                 is drawn inside the edge (padding = half the stroke) so it isn't clipped. -->
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/iv_logo"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/bg_circle_white"
+                android:contentDescription="@null"
+                android:padding="0.5dp"
+                android:scaleType="centerCrop"
+                android:visibility="gone"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.JHENORA.Circle"
+                app:strokeColor="@color/gray_200"
+                app:strokeWidth="1dp" />
+
+            <ImageView
+                android:id="@+id/iv_logo_edit"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="bottom|end"
+                android:background="@drawable/bg_logo_edit_badge"
+                android:contentDescription="@null"
+                android:elevation="2dp"
+                android:padding="5dp"
+                android:src="@drawable/ic_image"
+                app:tint="@color/white" />
+
+            <ProgressBar
+                android:id="@+id/progress_logo"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_gravity="center"
+                android:indeterminateTint="@color/primary"
+                android:visibility="gone" />
+
+        </FrameLayout>
 
         <LinearLayout
             android:layout_width="0dp"

@@ -1,28 +1,63 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <style name="Theme.JHENORA" parent="Theme.MaterialComponents.Light.NoActionBar">
-        <item name="colorPrimary">@color/primary</item>
-        <item name="colorPrimaryVariant">@color/primary_dark</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <item name="colorSecondary">@color/secondary</item>
-        <item name="colorOnSecondary">@color/white</item>
+    <style name="Theme.JHENORA" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/m3_primary</item>
+        <item name="colorOnPrimary">@color/m3_on_primary</item>
+        <item name="colorPrimaryContainer">@color/m3_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/m3_on_primary_container</item>
+        <item name="colorSecondary">@color/m3_secondary</item>
+        <item name="colorOnSecondary">@color/m3_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/m3_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/m3_on_secondary_container</item>
+        <item name="colorTertiary">@color/m3_tertiary</item>
+        <item name="colorOnTertiary">@color/m3_on_tertiary</item>
+        <item name="colorTertiaryContainer">@color/m3_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/m3_on_tertiary_container</item>
+        <item name="colorError">@color/m3_error</item>
+        <item name="colorOnError">@color/m3_on_error</item>
+        <item name="colorErrorContainer">@color/m3_error_container</item>
+        <item name="colorOnErrorContainer">@color/m3_on_error_container</item>
         <item name="android:colorBackground">@color/background</item>
-        <item name="colorSurface">@color/surface</item>
-        <item name="colorOnSurface">@color/text_primary</item>
-        <item name="android:statusBarColor">@color/primary</item>
+        <item name="colorSurface">@color/m3_surface</item>
+        <item name="colorOnSurface">@color/m3_on_surface</item>
+        <item name="colorSurfaceVariant">@color/m3_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/m3_on_surface_variant</item>
+        <item name="colorOutline">@color/m3_outline</item>
+        <item name="colorOutlineVariant">@color/m3_outline_variant</item>
+        <item name="colorSurfaceContainerLowest">@color/m3_surface_container_lowest</item>
+        <item name="colorSurfaceContainerLow">@color/m3_surface_container_low</item>
+        <item name="colorSurfaceContainer">@color/m3_surface_container</item>
+        <item name="colorSurfaceContainerHigh">@color/m3_surface_container_high</item>
+        <item name="colorSurfaceContainerHighest">@color/m3_surface_container_highest</item>
+        <item name="android:statusBarColor">@color/brand_deep</item>
+        <item name="android:windowBackground">@drawable/bg_app_background</item>
         <item name="android:navigationBarColor">@color/nav_bar</item>
         <item name="android:windowLightStatusBar" tools:targetApi="23">false</item>
         <item name="android:fontFamily">@font/google_sans</item>
         <item name="materialButtonStyle">@style/Widget.JHENORA.Button</item>
         <item name="textInputStyle">@style/Widget.JHENORA.TextInputLayout</item>
+        <item name="chipStyle">@style/Widget.JHENORA.Chip</item>
+        <item name="materialCardViewStyle">@style/Widget.JHENORA.Card</item>
+        <item name="extendedFloatingActionButtonStyle">@style/Widget.JHENORA.ExtendedFab</item>
+        <item name="floatingActionButtonStyle">@style/Widget.JHENORA.Fab</item>
     </style>
 
+    <!-- Loading screen: white canvas. On Android 12+ the system splash shows the logo
+         animation's first frame, which SplashActivity's animated logo then continues from. -->
     <style name="Theme.JHENORA.Splash" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="android:windowFullscreen">true</item>
-        <item name="android:statusBarColor">@color/primary</item>
-        <item name="android:navigationBarColor">@color/primary</item>
+        <item name="android:windowBackground">@color/white</item>
+        <item name="android:statusBarColor">@color/white</item>
+        <item name="android:navigationBarColor">@color/white</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="23">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
         <item name="colorPrimary">@color/primary</item>
-        <item name="android:colorBackground">@color/primary</item>
+        <item name="android:colorBackground">@color/white</item>
+        <item name="android:windowSplashScreenBackground" tools:targetApi="31">@color/white</item>
+        <!-- First frame of the logo animation (plain blue circle), drawn at the same size and
+             position as SplashActivity's 220dp logo, so the animation continues seamlessly
+             from what the system splash shows during app start-up. -->
+        <item name="android:windowSplashScreenAnimatedIcon" tools:targetApi="31">@drawable/splash_icon_start</item>
     </style>
 
     <style name="Theme.JHENORA.FullScreen" parent="Theme.MaterialComponents.Light.NoActionBar">
@@ -35,8 +70,63 @@
         <item name="android:colorBackground">@color/gray_900</item>
     </style>
 
-    <!-- Button Styles -->
-    <style name="Widget.JHENORA.Button" parent="Widget.MaterialComponents.Button">
+    <!-- Live Display kiosk theme — brand-fixed "White Paper" palette (see ld_* in colors.xml),
+         matching the rest of the app rather than a separate dark kiosk look. No Material You
+         dynamic color: the kiosk's identity should stay predictable regardless of device/wallpaper. -->
+    <style name="Theme.JHENORA.LiveDisplay" parent="Theme.Material3.Light.NoActionBar">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:statusBarColor">@color/ld_background</item>
+        <item name="android:navigationBarColor">@color/ld_background</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="23">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
+        <item name="colorPrimary">@color/ld_primary</item>
+        <item name="colorOnPrimary">@color/ld_on_primary</item>
+        <item name="colorPrimaryContainer">@color/ld_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/ld_on_primary_container</item>
+        <item name="colorSecondary">@color/ld_secondary</item>
+        <item name="colorTertiary">@color/ld_tertiary</item>
+        <item name="colorOnTertiary">@color/ld_on_tertiary</item>
+        <item name="colorTertiaryContainer">@color/ld_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/ld_on_tertiary_container</item>
+        <item name="colorSurface">@color/ld_surface</item>
+        <item name="colorOnSurface">@color/ld_on_surface</item>
+        <item name="colorSurfaceVariant">@color/ld_surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/ld_on_surface_variant</item>
+        <item name="colorOutline">@color/ld_outline</item>
+        <item name="android:colorBackground">@color/ld_background</item>
+        <item name="android:fontFamily">@font/google_sans</item>
+    </style>
+
+    <style name="ShapeAppearance.JHENORA.LiveDisplay.Pill" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <style name="ShapeAppearance.JHENORA.LiveDisplay.Card" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">32dp</item>
+    </style>
+
+    <!-- Live Display column image: sits flush against the card's right edge, full height, so
+         only the corners that meet the card's own rounded corners (top-right/bottom-right) are
+         rounded to match; the inner corners stay square against the text content beside it. -->
+    <style name="ShapeAppearance.JHENORA.LiveDisplay.ImageEnd" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">0dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeTopRight">@dimen/corner_xl</item>
+        <item name="cornerSizeBottomRight">@dimen/corner_xl</item>
+    </style>
+
+    <!-- Button Styles (Material 3) -->
+    <!-- Filled buttons draw the brand gradient (bg_button_gradient) instead of a flat tint.
+         backgroundTint must stay null or MaterialButton would flatten the gradient. -->
+    <style name="Widget.JHENORA.Button" parent="Widget.Material3.Button">
+        <item name="android:background">@drawable/bg_button_gradient</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:elevation">2dp</item>
         <item name="cornerRadius">@dimen/corner_full</item>
         <item name="android:textStyle">bold</item>
         <item name="android:letterSpacing">0.02</item>
@@ -45,17 +135,25 @@
         <item name="android:minHeight">@dimen/button_height</item>
     </style>
 
-    <style name="Widget.JHENORA.Button.Outlined" parent="Widget.MaterialComponents.Button.OutlinedButton">
+    <style name="Widget.JHENORA.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
         <item name="cornerRadius">@dimen/corner_full</item>
         <item name="android:textStyle">bold</item>
         <item name="android:paddingStart">24dp</item>
         <item name="android:paddingEnd">24dp</item>
         <item name="android:minHeight">@dimen/button_height</item>
-        <item name="strokeColor">@color/primary</item>
-        <item name="android:textColor">@color/primary</item>
+        <item name="strokeColor">@color/m3_outline</item>
+        <item name="android:textColor">@color/m3_primary</item>
     </style>
 
-    <style name="Widget.JHENORA.Button.Danger" parent="Widget.MaterialComponents.Button">
+    <style name="Widget.JHENORA.Button.Tonal" parent="Widget.Material3.Button.TonalButton">
+        <item name="cornerRadius">@dimen/corner_full</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:paddingStart">24dp</item>
+        <item name="android:paddingEnd">24dp</item>
+        <item name="android:minHeight">@dimen/button_height</item>
+    </style>
+
+    <style name="Widget.JHENORA.Button.Danger" parent="Widget.Material3.Button">
         <item name="cornerRadius">@dimen/corner_full</item>
         <item name="backgroundTint">@color/danger</item>
         <item name="android:textStyle">bold</item>
@@ -64,7 +162,7 @@
         <item name="android:minHeight">@dimen/button_height</item>
     </style>
 
-    <style name="Widget.JHENORA.Button.Success" parent="Widget.MaterialComponents.Button">
+    <style name="Widget.JHENORA.Button.Success" parent="Widget.Material3.Button">
         <item name="cornerRadius">@dimen/corner_full</item>
         <item name="backgroundTint">@color/success</item>
         <item name="android:textStyle">bold</item>
@@ -73,25 +171,57 @@
         <item name="android:minHeight">@dimen/button_height</item>
     </style>
 
-    <!-- TextInputLayout Styles -->
-    <style name="Widget.JHENORA.TextInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-        <item name="boxCornerRadiusTopStart">@dimen/corner_lg</item>
-        <item name="boxCornerRadiusTopEnd">@dimen/corner_lg</item>
-        <item name="boxCornerRadiusBottomStart">@dimen/corner_lg</item>
-        <item name="boxCornerRadiusBottomEnd">@dimen/corner_lg</item>
-        <item name="boxStrokeColor">@color/stroke</item>
-        <item name="boxBackgroundColor">@color/surface</item>
-        <item name="hintTextColor">@color/text_secondary</item>
+    <!-- TextInputLayout Styles (Material 3 outlined — box color/error/focus states are
+         driven automatically by the theme's colorPrimary/colorOutline/colorError). -->
+    <style name="Widget.JHENORA.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxCornerRadiusTopStart">@dimen/corner_md</item>
+        <item name="boxCornerRadiusTopEnd">@dimen/corner_md</item>
+        <item name="boxCornerRadiusBottomStart">@dimen/corner_md</item>
+        <item name="boxCornerRadiusBottomEnd">@dimen/corner_md</item>
+        <item name="hintTextColor">@color/m3_primary</item>
         <item name="android:textColorHint">@color/text_hint</item>
     </style>
 
-    <!-- Card Styles -->
-    <style name="Widget.JHENORA.Card" parent="Widget.MaterialComponents.CardView">
+    <style name="Widget.JHENORA.TextInputLayout.ExposedDropdownMenu" parent="Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+        <item name="boxCornerRadiusTopStart">@dimen/corner_md</item>
+        <item name="boxCornerRadiusTopEnd">@dimen/corner_md</item>
+        <item name="boxCornerRadiusBottomStart">@dimen/corner_md</item>
+        <item name="boxCornerRadiusBottomEnd">@dimen/corner_md</item>
+        <item name="hintTextColor">@color/m3_primary</item>
+        <item name="android:textColorHint">@color/text_hint</item>
+    </style>
+
+    <!-- Card Styles (Material 3 elevated) -->
+    <style name="Widget.JHENORA.Card" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardCornerRadius">@dimen/corner_lg</item>
+        <item name="cardElevation">3dp</item>
+        <!-- Blue-tinted soft shadow for depth (API 28+; older devices use the default grey). -->
+        <item name="android:outlineSpotShadowColor" tools:targetApi="28">@color/brand_shadow</item>
+        <item name="android:outlineAmbientShadowColor" tools:targetApi="28">@color/brand_shadow</item>
+        <item name="cardBackgroundColor">@color/m3_surface</item>
+        <item name="strokeWidth">0dp</item>
+    </style>
+
+    <!-- Card Styles — outlined variant for form/section containers -->
+    <style name="Widget.JHENORA.Card.Outlined" parent="Widget.Material3.CardView.Outlined">
         <item name="cardCornerRadius">@dimen/corner_lg</item>
         <item name="cardElevation">0dp</item>
-        <item name="cardBackgroundColor">@color/surface</item>
-        <item name="strokeWidth">1.5dp</item>
-        <item name="strokeColor">@color/gray_200</item>
+        <item name="cardBackgroundColor">@color/m3_surface</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="strokeColor">@color/m3_outline_variant</item>
+    </style>
+
+    <!-- FAB Styles (Material 3) -->
+    <style name="Widget.JHENORA.Fab" parent="Widget.Material3.FloatingActionButton.Primary">
+        <item name="backgroundTint">@color/brand_mid</item>
+        <item name="tint">@color/white</item>
+    </style>
+
+    <style name="Widget.JHENORA.ExtendedFab" parent="Widget.Material3.ExtendedFloatingActionButton.Icon.Primary">
+        <item name="backgroundTint">@color/brand_mid</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="iconTint">@color/white</item>
+        <item name="android:textStyle">bold</item>
     </style>
 
     <!-- Text Styles -->
@@ -128,6 +258,13 @@
         <item name="android:textColor">@color/text_secondary</item>
     </style>
 
+    <style name="TextStyle.JHENORA.SectionTitle">
+        <item name="android:textSize">@dimen/text_lg</item>
+        <item name="android:textColor">@color/m3_on_surface</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">@font/google_sans</item>
+    </style>
+
     <style name="TextStyle.JHENORA.Label">
         <item name="android:textSize">@dimen/text_sm</item>
         <item name="android:textColor">@color/text_secondary</item>
@@ -136,12 +273,20 @@
         <item name="android:textStyle">bold</item>
     </style>
 
-    <!-- Chip Styles (applied to com.google.android.material.chip.Chip views) -->
-    <style name="Widget.JHENORA.Chip" parent="Widget.MaterialComponents.Chip.Filter">
+    <!-- Chip Styles (applied to com.google.android.material.chip.Chip views).
+         Selection state is driven by View.setSelected(), not the built-in checkable/
+         checked mechanism, so these are plain (non-checkable) filter/action chips. -->
+    <style name="Widget.JHENORA.Chip" parent="Widget.Material3.Chip.Filter">
         <item name="chipCornerRadius">@dimen/corner_full</item>
+        <item name="chipMinHeight">32dp</item>
+        <item name="chipStrokeWidth">0dp</item>
+        <item name="android:checkable">false</item>
+        <item name="chipIconVisible">false</item>
+        <item name="checkedIconVisible">false</item>
         <item name="chipBackgroundColor">@color/chip_state</item>
         <item name="android:textColor">@color/chip_text_state</item>
         <item name="android:textSize">@dimen/text_sm</item>
+        <item name="android:textStyle">bold</item>
     </style>
 
     <!-- Bottom Sheet Style -->
@@ -177,6 +322,11 @@
     <style name="ShapeAppearance.JHENORA.Circle" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
+    </style>
+
+    <style name="ShapeAppearance.JHENORA.Thumbnail" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/corner_sm</item>
     </style>
 
     <!-- Tab Layout Style -->

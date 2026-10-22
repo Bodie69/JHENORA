@@ -9,6 +9,12 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
+    <!-- Keeps the approval-notification websocket (RealtimeService) alive in the background
+         and restarts it after a reboot. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application
         android:name=".JhenoraApp"
         android:allowBackup="true"
@@ -69,7 +75,7 @@
             android:name=".activities.LiveDisplayActivity"
             android:exported="false"
             android:screenOrientation="landscape"
-            android:theme="@style/Theme.JHENORA.FullScreen" />
+            android:theme="@style/Theme.JHENORA.LiveDisplay" />
 
         <activity
             android:name=".activities.CreateAnnouncementActivity"
@@ -88,6 +94,43 @@
         <activity
             android:name=".activities.EventDetailActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".activities.FullScreenImageActivity"
+            android:exported="false"
+            android:theme="@style/Theme.JHENORA.FullScreen" />
+
+        <activity
+            android:name=".activities.PostHistoryActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activities.MyEventsActivity"
+            android:exported="false" />
+
+        <service
+            android:name=".services.RealtimeService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <receiver
+            android:name=".receivers.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Shares the temporary camera capture file with the camera app (profile photo). -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
     </application>
 </manifest>

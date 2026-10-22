@@ -8,7 +8,10 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.campus.campusmate.base.BaseViewModel;
 import com.campus.campusmate.models.Announcement;
+import com.campus.campusmate.models.FeedFilter;
 import com.campus.campusmate.repositories.AnnouncementRepository;
+import com.campus.campusmate.repositories.BaseRepository.OnPageListener;
+import com.campus.campusmate.utils.Constants;
 import com.campus.campusmate.utils.SupabaseStorage;
 
 import java.util.ArrayList;
@@ -21,11 +24,22 @@ public class AnnouncementViewModel extends BaseViewModel {
     public final MutableLiveData<List<Announcement>> announcements = new MutableLiveData<>(new ArrayList<>());
     public final MutableLiveData<List<Announcement>> pendingAnnouncements = new MutableLiveData<>(new ArrayList<>());
     public final MutableLiveData<List<Announcement>> userAnnouncements = new MutableLiveData<>(new ArrayList<>());
+    /** Complete approved-and-visible set for the Quick Stats count (see {@link #loadApprovedAnnouncementsFull}). */
+    public final MutableLiveData<List<Announcement>> approvedAnnouncementsFull = new MutableLiveData<>(new ArrayList<>());
     public final MutableLiveData<Announcement> loadedAnnouncement = new MutableLiveData<>();
-    public final MutableLiveData<String> successMessage = new MutableLiveData<>();
-    public final MutableLiveData<String> filterDept = new MutableLiveData<>("All");
-    public final MutableLiveData<String> sortOrder = new MutableLiveData<>("Latest");
-    public final MutableLiveData<String> searchQuery = new MutableLiveData<>("");
+    public final MutableLiveData<com.campus.campusmate.utils.Event<String>> successMessage = new MutableLiveData<>();
+
+    /** Whether a next-page fetch for {@link #announcements} is in flight (feed footer spinner). */
+    public final MutableLiveData<Boolean> isLoadingMore = new MutableLiveData<>(false);
+
+    private String feedDept;
+    private int feedOffset = 0;
+    private boolean feedHasMore = true;
+    private boolean feedFetching = false;
+    /** Feed filter/search/sort. Lives here so it survives rotation and fragment recreation. */
+    private FeedFilter feedFilter = FeedFilter.defaults();
+    /** Bumped on every feed restart so responses for a superseded filter are dropped. */
+    private int feedGeneration = 0;
 
     public AnnouncementViewModel(@NonNull Application application) {
         super(application);
@@ -70,7 +84,7 @@ public class AnnouncementViewModel extends BaseViewModel {
 
             @Override
             public void onFailure(String errorMessage) {
-                _errorMessage.postValue("Image upload failed, submitting without image");
+                _errorMessage.postValue(new com.campus.campusmate.utils.Event<>("Image upload failed, submitting without image"));
                 submitOrUpdate(announcement, isEdit);
             }
         });
@@ -84,8 +98,76 @@ public class AnnouncementViewModel extends BaseViewModel {
         }
     }
 
+    public FeedFilter getFeedFilter() {
+        return feedFilter;
+    }
+
+    /** Applies {@code filter} to the Announcements feed, reloading from page one if it changed. */
+    public void setFeedFilter(FeedFilter filter) {
+        if (filter.equals(feedFilter)) return;
+        feedFilter = filter;
+        loadApprovedAnnouncements(feedDept);
+    }
+
+    /** (Re)starts the Announcements feed from the first page for {@code userDept}. */
     public void loadApprovedAnnouncements(String userDept) {
-        repo.observeApprovedAnnouncements(userDept, announcements);
+        feedDept = userDept;
+        feedOffset = 0;
+        feedHasMore = true;
+        feedFetching = true;
+        int generation = ++feedGeneration;
+        isLoadingMore.postValue(false);
+        repo.fetchApprovedAnnouncementsPage(userDept, feedFilter, 0, Constants.PAGE_SIZE, new OnPageListener<Announcement>() {
+            @Override
+            public void onLoaded(List<Announcement> page) {
+                if (generation != feedGeneration) return;
+                feedFetching = false;
+                feedOffset = page.size();
+                feedHasMore = page.size() == Constants.PAGE_SIZE;
+                announcements.postValue(page);
+            }
+
+            @Override
+            public void onError(String message) {
+                if (generation != feedGeneration) return;
+                feedFetching = false;
+                announcements.postValue(null);
+            }
+        });
+    }
+
+    /**
+     * Appends the next page of the Announcements feed, if one hasn't already been requested
+     * and the previous page wasn't short (i.e. there's more to load). Safe to call repeatedly
+     * from a scroll listener — no-ops while a fetch is already in flight or the feed is exhausted.
+     */
+    public void loadMoreAnnouncements() {
+        if (feedFetching || !feedHasMore) return;
+        feedFetching = true;
+        int generation = feedGeneration;
+        isLoadingMore.postValue(true);
+        repo.fetchApprovedAnnouncementsPage(feedDept, feedFilter, feedOffset, Constants.PAGE_SIZE, new OnPageListener<Announcement>() {
+            @Override
+            public void onLoaded(List<Announcement> page) {
+                if (generation != feedGeneration) return;
+                feedFetching = false;
+                isLoadingMore.postValue(false);
+                feedOffset += page.size();
+                feedHasMore = page.size() == Constants.PAGE_SIZE;
+                List<Announcement> current = announcements.getValue();
+                List<Announcement> combined = current != null ? new ArrayList<>(current) : new ArrayList<>();
+                combined.addAll(page);
+                announcements.postValue(combined);
+            }
+
+            @Override
+            public void onError(String message) {
+                if (generation != feedGeneration) return;
+                feedFetching = false;
+                isLoadingMore.postValue(false);
+                // Leave the already-loaded pages in place; the user can retry by scrolling again.
+            }
+        });
     }
 
     public void loadPendingAnnouncements() {
@@ -94,6 +176,11 @@ public class AnnouncementViewModel extends BaseViewModel {
 
     public void loadUserAnnouncements(String userId) {
         repo.observeUserAnnouncements(userId, userAnnouncements);
+    }
+
+    /** Loads the full approved-and-visible announcement count for {@code userDept} (Quick Stats). */
+    public void loadApprovedAnnouncementsFull(String userDept) {
+        repo.observeApprovedAnnouncements(userDept, approvedAnnouncementsFull);
     }
 
     public void loadAllAnnouncements() {
@@ -106,7 +193,7 @@ public class AnnouncementViewModel extends BaseViewModel {
             @Override
             public void onSuccess(String id) {
                 setLoading(false);
-                successMessage.postValue("Announcement submitted for approval");
+                successMessage.postValue(new com.campus.campusmate.utils.Event<>("Announcement submitted for approval"));
             }
 
             @Override
@@ -122,7 +209,7 @@ public class AnnouncementViewModel extends BaseViewModel {
             @Override
             public void onSuccess(String id) {
                 setLoading(false);
-                successMessage.postValue("Announcement updated");
+                successMessage.postValue(new com.campus.campusmate.utils.Event<>("Announcement updated"));
             }
 
             @Override
@@ -138,7 +225,7 @@ public class AnnouncementViewModel extends BaseViewModel {
             @Override
             public void onSuccess() {
                 setLoading(false);
-                successMessage.postValue("Announcement deleted");
+                successMessage.postValue(new com.campus.campusmate.utils.Event<>("Announcement deleted"));
             }
 
             @Override
@@ -154,7 +241,7 @@ public class AnnouncementViewModel extends BaseViewModel {
             @Override
             public void onSuccess() {
                 setLoading(false);
-                successMessage.postValue("Announcement approved");
+                successMessage.postValue(new com.campus.campusmate.utils.Event<>("Announcement approved"));
             }
 
             @Override
@@ -170,7 +257,7 @@ public class AnnouncementViewModel extends BaseViewModel {
             @Override
             public void onSuccess() {
                 setLoading(false);
-                successMessage.postValue("Announcement rejected");
+                successMessage.postValue(new com.campus.campusmate.utils.Event<>("Announcement rejected"));
             }
 
             @Override
@@ -178,38 +265,5 @@ public class AnnouncementViewModel extends BaseViewModel {
                 setError(message);
             }
         });
-    }
-
-    public List<Announcement> getFilteredAnnouncements(List<Announcement> all, String dept, String sort, String query) {
-        if (all == null) return new ArrayList<>();
-        List<Announcement> filtered = new ArrayList<>();
-        String q = query != null ? query.toLowerCase().trim() : "";
-
-        for (Announcement a : all) {
-            boolean matchDept = "All".equals(dept)
-                    || Announcement.VISIBILITY_GENERAL.equals(a.getVisibility()) && "General".equals(dept)
-                    || a.getDepartment() != null && a.getDepartment().equals(dept);
-            boolean matchQuery = q.isEmpty()
-                    || (a.getTitle() != null && a.getTitle().toLowerCase().contains(q))
-                    || (a.getWhat() != null && a.getWhat().toLowerCase().contains(q))
-                    || (a.getAuthorName() != null && a.getAuthorName().toLowerCase().contains(q));
-            if (matchDept && matchQuery) filtered.add(a);
-        }
-
-        filtered.sort((a, b) -> {
-            if ("Priority".equals(sort)) {
-                int wA = priorityWeight(a.getPriority());
-                int wB = priorityWeight(b.getPriority());
-                if (wA != wB) return Integer.compare(wB, wA);
-            }
-            return Long.compare(b.getCreatedAt(), a.getCreatedAt());
-        });
-        return filtered;
-    }
-
-    private int priorityWeight(String p) {
-        if (Announcement.PRIORITY_URGENT.equals(p)) return 3;
-        if (Announcement.PRIORITY_HIGH.equals(p)) return 2;
-        return 1;
     }
 }

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Wash over the header campus photo: deep brand blue on the left (behind the logo and
+     title) easing to a lighter royal blue on the right, so the campus shows through while
+     white header text stays readable. The photo itself (header_campus.jpg) is pre-blurred so
+     the sign's lettering never competes with the header title. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="0"
+        android:startColor="#EB00237A"
+        android:centerColor="#C70047C2"
+        android:endColor="#800057D9"
+        android:type="linear" />
+</shape>

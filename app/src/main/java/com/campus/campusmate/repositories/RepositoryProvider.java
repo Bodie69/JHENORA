@@ -14,7 +14,7 @@ public class RepositoryProvider {
     private final AnnouncementRepository announcementRepository;
     private final EventRepository eventRepository;
     private final OrganizationRepository organizationRepository;
-    private final ImageStorageRepository imageStorageRepository;
+    private final DepartmentRepository departmentRepository;
 
     private RepositoryProvider(Context context) {
         Context appContext = context.getApplicationContext();
@@ -30,9 +30,9 @@ public class RepositoryProvider {
         
         organizationRepository = OrganizationRepository.getInstance();
         organizationRepository.init(appContext);
-        
-        imageStorageRepository = ImageStorageRepository.getInstance();
-        imageStorageRepository.init(appContext);
+
+        departmentRepository = DepartmentRepository.getInstance();
+        departmentRepository.init(appContext);
     }
 
     public static synchronized void init(Context context) {
@@ -64,7 +64,7 @@ public class RepositoryProvider {
         return organizationRepository;
     }
 
-    public ImageStorageRepository getImageStorageRepository() {
-        return imageStorageRepository;
+    public DepartmentRepository getDepartmentRepository() {
+        return departmentRepository;
     }
 }

@@ -7,7 +7,9 @@ public class Department {
     private String code;
     private String description;
     private String colorHex;
-    private int colorRes;
+    /** Public URL of the department logo in Supabase Storage; {@code null} or empty if none. */
+    private String logoUrl;
+    private transient int colorRes;
     private long createdAt;
 
     public Department() {}
@@ -33,6 +35,9 @@ public class Department {
 
     public String getColorHex() { return colorHex; }
     public void setColorHex(String colorHex) { this.colorHex = colorHex; }
+
+    public String getLogoUrl() { return logoUrl; }
+    public void setLogoUrl(String logoUrl) { this.logoUrl = logoUrl; }
 
     public int getColorRes() { return colorRes; }
     public void setColorRes(int colorRes) { this.colorRes = colorRes; }

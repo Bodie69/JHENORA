@@ -4,6 +4,7 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -11,7 +12,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.campus.campusmate.R;
 import com.campus.campusmate.models.User;
+import com.campus.campusmate.utils.AvatarLoader;
 import com.campus.campusmate.utils.DateUtils;
+import com.campus.campusmate.utils.DepartmentLogos;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,6 +59,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
 
     class ViewHolder extends RecyclerView.ViewHolder {
         private final TextView tvInitials;
+        private final ImageView ivAvatar;
         private final TextView tvName;
         private final TextView tvEmail;
         private final TextView tvRole;
@@ -66,6 +70,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
         ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvInitials = itemView.findViewById(R.id.tv_initials);
+            ivAvatar = itemView.findViewById(R.id.iv_avatar);
             tvName = itemView.findViewById(R.id.tv_name);
             tvEmail = itemView.findViewById(R.id.tv_email);
             tvRole = itemView.findViewById(R.id.tv_role);
@@ -79,7 +84,10 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
             tvName.setText(name.isEmpty() ? u.getEmail() : name);
             if (tvEmail != null) tvEmail.setText(u.getEmail() != null ? u.getEmail() : "");
             if (tvRole != null) tvRole.setText(u.getRole() != null ? capitalize(u.getRole()) : "");
-            if (tvDept != null) tvDept.setText(u.getDepartment() != null ? u.getDepartment() : "");
+            if (tvDept != null) {
+                tvDept.setText(u.getDepartment() != null ? u.getDepartment() : "");
+                DepartmentLogos.bind(tvDept, u.getDepartment());
+            }
             if (tvDate != null) tvDate.setText(DateUtils.formatDate(u.getCreatedAt()));
 
             // Initials avatar
@@ -87,6 +95,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
                 String initials = getInitials(name, u.getEmail());
                 tvInitials.setText(initials);
                 tvInitials.setBackgroundResource(R.drawable.bg_avatar);
+                if (ivAvatar != null) AvatarLoader.load(ivAvatar, tvInitials, u.getProfileImageUrl());
             }
 
             // Status badge

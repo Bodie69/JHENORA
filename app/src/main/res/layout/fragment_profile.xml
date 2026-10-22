@@ -21,9 +21,14 @@
             android:paddingBottom="32dp"
             android:paddingHorizontal="@dimen/spacing_xl">
 
+            <!-- Whole avatar is tappable (a larger target than the small camera button). -->
             <FrameLayout
+                android:id="@+id/frame_avatar"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="@string/profile_photo_change">
 
                 <TextView
                     android:id="@+id/tv_initials"
@@ -42,7 +47,19 @@
                     android:layout_height="84dp"
                     android:scaleType="centerCrop"
                     app:shapeAppearanceOverlay="@style/ShapeAppearance.JHENORA.Circle"
+                    android:importantForAccessibility="no"
                     android:visibility="gone" />
+
+                <!-- Shown while a photo is uploading. -->
+                <com.google.android.material.progressindicator.CircularProgressIndicator
+                    android:id="@+id/progress_photo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:indeterminate="true"
+                    android:visibility="gone"
+                    app:indicatorSize="84dp"
+                    app:trackThickness="3dp" />
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/btn_edit_photo"
@@ -55,7 +72,7 @@
                     app:tint="@color/primary"
                     app:backgroundTint="@color/white"
                     app:elevation="2dp"
-                    android:contentDescription="Change Photo" />
+                    android:contentDescription="@string/profile_photo_change" />
 
             </FrameLayout>
 
@@ -213,68 +230,103 @@
 
         </androidx.cardview.widget.CardView>
 
-        <!-- Post History section -->
-        <LinearLayout
+        <!-- Post History / My Events: dedicated pages, linked from here rather than embedded
+             inline — the profile page no longer renders every post/event the user has ever made. -->
+        <androidx.cardview.widget.CardView
             android:id="@+id/section_post_history"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginHorizontal="@dimen/spacing_base"
-            android:layout_marginTop="@dimen/spacing_base"
-            android:orientation="vertical"
-            android:visibility="gone">
+            android:layout_margin="@dimen/spacing_base"
+            android:layout_marginTop="0dp"
+            android:visibility="gone"
+            app:cardCornerRadius="@dimen/corner_lg"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/gray_200"
+            app:strokeWidth="1.5dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/label_post_history"
-                android:textColor="@color/text_primary"
-                android:textSize="@dimen/text_lg"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tv_no_history"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_sm"
-                android:text="No posts yet"
-                android:textColor="@color/text_secondary"
-                android:visibility="gone" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rv_post_history"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_sm"
-                android:nestedScrollingEnabled="false"
-                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+                android:orientation="vertical">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_lg"
-                android:text="@string/label_my_events"
-                android:textColor="@color/text_primary"
-                android:textSize="@dimen/text_lg"
-                android:textStyle="bold" />
+                <LinearLayout
+                    android:id="@+id/row_post_history"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/spacing_base">
 
-            <TextView
-                android:id="@+id/tv_no_event_history"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_sm"
-                android:text="@string/no_event_history"
-                android:textColor="@color/text_secondary"
-                android:visibility="gone" />
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_announcements"
+                        app:tint="@color/primary" />
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rv_event_history"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_sm"
-                android:nestedScrollingEnabled="false"
-                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/spacing_md"
+                        android:layout_weight="1"
+                        android:text="@string/label_post_history"
+                        android:textColor="@color/text_primary"
+                        android:textSize="@dimen/text_base"
+                        android:textStyle="bold" />
 
-        </LinearLayout>
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_chevron_right"
+                        app:tint="@color/text_hint" />
+
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="@color/gray_200" />
+
+                <LinearLayout
+                    android:id="@+id/row_my_events"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="@dimen/spacing_base">
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_events"
+                        app:tint="@color/primary" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/spacing_md"
+                        android:layout_weight="1"
+                        android:text="@string/label_my_events"
+                        android:textColor="@color/text_primary"
+                        android:textSize="@dimen/text_base"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_chevron_right"
+                        app:tint="@color/text_hint" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
 
         <!-- Logout -->
         <com.google.android.material.button.MaterialButton
@@ -282,8 +334,20 @@
             style="@style/Widget.JHENORA.Button.Danger"
             android:layout_width="match_parent"
             android:layout_height="@dimen/button_height"
-            android:layout_margin="@dimen/spacing_xl"
+            android:layout_marginHorizontal="@dimen/spacing_xl"
+            android:layout_marginTop="@dimen/spacing_xl"
             android:text="@string/btn_logout" />
+
+        <!-- App version, from BuildConfig (bumped automatically each build). -->
+        <TextView
+            android:id="@+id/tv_version"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_md"
+            android:layout_marginBottom="@dimen/spacing_xl"
+            android:gravity="center"
+            android:textColor="@color/text_secondary"
+            android:textSize="@dimen/text_xs" />
 
     </LinearLayout>
 

@@ -1,43 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<!-- Loading screen. On Android 9+ SplashActivity swaps the static logo for the animated one
+     (res/raw/splash_logo_anim.webp), which draws the JHENORA logo in on white. Keep this at
+     220dp and centred: the Android 12+ system splash icon (splash_icon_start.png) is the
+     animation's first frame drawn at exactly this size, so the hand-off is seamless. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_primary_gradient"
-    android:gravity="center"
-    android:orientation="vertical">
+    android:background="@color/white">
 
-    <com.google.android.material.imageview.ShapeableImageView
+    <ImageView
         android:id="@+id/iv_logo"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:src="@drawable/ic_logo"
-        android:scaleType="centerCrop"
-        app:shapeAppearanceOverlay="@style/ShapeAppearance.JHENORA.Circle"
-        android:contentDescription="JHENORA Logo" />
+        android:layout_width="220dp"
+        android:layout_height="220dp"
+        android:layout_gravity="center"
+        android:adjustViewBounds="true"
+        android:contentDescription="@string/app_name"
+        android:src="@drawable/ic_logo_full" />
 
-    <TextView
+    <LinearLayout
+        android:id="@+id/layout_loading"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:fontFamily="@font/google_sans"
-        android:text="@string/app_name"
-        android:textColor="@color/white"
-        android:textSize="@dimen/text_4xl"
-        android:textStyle="bold" />
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="56dp"
+        android:alpha="0"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="@string/app_tagline"
-        android:textColor="#CCffffff"
-        android:textSize="@dimen/text_base" />
+        <ProgressBar
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:indeterminateTint="@color/primary" />
 
-    <ProgressBar
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="48dp"
-        android:indeterminateTint="@color/white" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:fontFamily="@font/google_sans"
+            android:text="@string/app_tagline"
+            android:textColor="@color/text_secondary"
+            android:textSize="@dimen/text_base" />
 
-</LinearLayout>
+    </LinearLayout>
+
+</FrameLayout>

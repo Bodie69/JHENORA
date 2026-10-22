@@ -67,9 +67,19 @@ public class AdminDashboardActivity extends BaseActivity<ActivityAdminDashboardB
 
     @Override
     protected void setupObservers() {
-        viewModel.successMessage.observe(this, msg -> {
+        // Admin messages are shown here only (not per tab), once each: tabs share this
+        // ViewModel, so showing them in several places produced duplicates.
+        viewModel.successMessage.observe(this, event -> {
+            String msg = event != null ? event.getContentIfNotHandled() : null;
+            if (msg != null) com.campus.campusmate.utils.UiUtils.showToast(this, msg);
+        });
+        viewModel.errorMessage.observe(this, event -> {
+            String msg = event != null ? event.getContentIfNotHandled() : null;
             if (msg != null) {
-                com.campus.campusmate.utils.UiUtils.showToast(this, msg);
+                com.google.android.material.snackbar.Snackbar
+                        .make(binding.getRoot(), msg, com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
+                        .setAnchorView(binding.bottomNavContainer)
+                        .show();
             }
         });
     }
@@ -162,16 +172,19 @@ public class AdminDashboardActivity extends BaseActivity<ActivityAdminDashboardB
         boolean selectedHome = (active == adminHomeFragment);
 
         if (binding.viewPager.getVisibility() == View.VISIBLE) {
-            int current = binding.viewPager.getCurrentItem();
             selectedHome = false;
-            if (current == 0) selectedStats = true;
-            else if (current == 1) selectedApprovals = true;
-            else if (current == 2) selectedUsers = true;
-            else if (current == 3) selectedUsers = true;
-            else if (current == 6) selectedUsers = true;
-            else if (current == 7) selectedUsers = true;
-            else if (current == 4) selectedProfile = true;
-            else if (current == 5) selectedProfile = true;
+            selectedProfile = false;
+            // Only the first three module tabs (Stats/Approvals/Users) have a dedicated
+            // bottom-nav slot. Orgs, Bulletin, Events, Depts and Live Display (positions
+            // 3, 4, 5, 6, 7) are reached only via the module grid, so no bottom-nav icon
+            // should light up for them — highlighting an unrelated icon was the "sloppy"
+            // navbar behavior reported for those pages.
+            switch (binding.viewPager.getCurrentItem()) {
+                case 0: selectedStats = true; break;
+                case 1: selectedApprovals = true; break;
+                case 2: selectedUsers = true; break;
+                default: break;
+            }
         }
 
         setNavButtonState(binding.btnNavStats, selectedStats);

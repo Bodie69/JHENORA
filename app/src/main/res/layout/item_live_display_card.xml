@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Single Live Display card, rotating through a merged Announcements+Events feed
+     (activity_live_display.xml). tv_type carries the "ANNOUNCEMENT"/"EVENT" label since
+     there's no longer a separate per-column header to convey it. -->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:cardBackgroundColor="@color/ld_surface"
+    app:cardCornerRadius="@dimen/corner_xl"
+    app:cardElevation="3dp"
+    app:strokeColor="@color/ld_outline"
+    app:strokeWidth="1dp">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- Populated state: details on the left (full card height, so the image never
+             compresses them) and the image as a fixed-share panel on the right. -->
+        <LinearLayout
+            android:id="@+id/layout_populated"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
+
+            <!-- ConstraintLayout (not LinearLayout weights) on purpose: scroll_content's box
+                 needs its final 0dp height resolved in the same pass LiveDisplayActivity
+                 measures against, and weight-based 0dp children get remeasured after an
+                 initial 0-height pass, which made that measurement see a bogus early height.
+                 ConstraintLayout resolves the chained top/bottom constraints up front, so the
+                 auto-scroll math sees the real box. -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="3"
+                android:paddingHorizontal="20dp"
+                android:paddingTop="14dp"
+                android:paddingBottom="12dp">
+
+                <LinearLayout
+                    android:id="@+id/row_badges"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_title"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/tv_title">
+
+                    <TextView
+                        android:id="@+id/tv_type"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/bg_tag"
+                        android:backgroundTint="@color/ld_primary"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="4dp"
+                        android:textColor="@color/white"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <!-- Always the poster's actual department (BSIT/BTLED/EDUC) — every post has
+                         one regardless of scope, so this stays visible even for General posts
+                         instead of being replaced by the scope label. -->
+                    <TextView
+                        android:id="@+id/tv_dept"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/bg_tag"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="4dp"
+                        android:textColor="@color/m3_on_primary_container"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <!-- "General" scope indicator, shown alongside tv_dept only for
+                         General-visibility posts (gone otherwise). -->
+                    <TextView
+                        android:id="@+id/tv_scope"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/bg_tag"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="4dp"
+                        android:text="General"
+                        android:textColor="@color/m3_on_primary_container"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+
+                <!-- Title sits on the same line as the badges (a compact label row) so the
+                     description below gets most of the card's height. The title anchors the row
+                     (badges centre on it) so a two-line title grows downward, and the barrier
+                     keeps the description below whichever of the two is taller. -->
+                <TextView
+                    android:id="@+id/tv_title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:ellipsize="end"
+                    android:fontFamily="@font/google_sans"
+                    android:maxLines="2"
+                    android:textColor="@color/ld_on_surface"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/row_badges"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <androidx.constraintlayout.widget.Barrier
+                    android:id="@+id/barrier_header"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:barrierDirection="bottom"
+                    app:constraint_referenced_ids="row_badges,tv_title" />
+
+                <!-- Unbounded-height text inside a fixed-height scroller: when the description
+                     is too long to fit, LiveDisplayActivity auto-scrolls this instead of
+                     ellipsizing, so the full text is always readable, just paced over time. -->
+                <androidx.core.widget.NestedScrollView
+                    android:id="@+id/scroll_content"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="8dp"
+                    android:overScrollMode="never"
+                    android:scrollbars="none"
+                    app:layout_constraintBottom_toTopOf="@id/row_meta"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/barrier_header">
+
+                    <!-- The description is the main content on the kiosk and fills the card. -->
+                    <TextView
+                        android:id="@+id/tv_content"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/google_sans"
+                        android:lineSpacingExtra="3dp"
+                        android:textColor="@color/ld_on_surface"
+                        android:textSize="16sp" />
+
+                </androidx.core.widget.NestedScrollView>
+
+                <LinearLayout
+                    android:id="@+id/row_meta"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    app:layout_constraintBottom_toTopOf="@id/progress_slide"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent">
+
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_profile"
+                        app:tint="@color/ld_on_surface_variant" />
+
+                    <TextView
+                        android:id="@+id/tv_author"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="5dp"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:singleLine="true"
+                        android:textColor="@color/ld_on_surface_variant"
+                        android:textSize="12sp" />
+
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:layout_marginStart="10dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_calendar"
+                        app:tint="@color/ld_on_surface_variant" />
+
+                    <TextView
+                        android:id="@+id/tv_date"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="5dp"
+                        android:textColor="@color/ld_on_surface_variant"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:id="@+id/progress_slide"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:max="100"
+                    android:progress="0"
+                    app:indicatorColor="@color/ld_primary"
+                    app:trackColor="@color/ld_outline"
+                    app:trackCornerRadius="2dp"
+                    app:trackThickness="3dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/iv_image"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="2"
+                android:background="@drawable/bg_primary_gradient"
+                android:contentDescription="@null"
+                android:scaleType="fitCenter"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.JHENORA.LiveDisplay.ImageEnd" />
+
+        </LinearLayout>
+
+        <!-- Empty state: shown instead of layout_populated when there's nothing to display. -->
+        <LinearLayout
+            android:id="@+id/layout_empty"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_display"
+                app:tint="@color/ld_on_surface_variant" />
+
+            <TextView
+                android:id="@+id/tv_empty"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:fontFamily="@font/google_sans"
+                android:textColor="@color/ld_on_surface_variant"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+</com.google.android.material.card.MaterialCardView>

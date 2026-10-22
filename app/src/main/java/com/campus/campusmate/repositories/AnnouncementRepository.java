@@ -6,8 +6,10 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.campus.campusmate.models.Announcement;
 import com.campus.campusmate.models.AuditLog;
+import com.campus.campusmate.models.FeedFilter;
+import com.campus.campusmate.utils.Constants;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -138,7 +140,84 @@ public class AnnouncementRepository extends BaseRepository {
 
     // --- Queries ---
 
+    /**
+     * Loads the complete approved-and-visible-to-{@code userDept} announcement set, walked in
+     * {@link Constants#BULK_FETCH_CHUNK_SIZE}-row chunks rather than one unbounded request.
+     * Used by screens that need the whole list at once (home preview, live display rotation).
+     * For the scrollable Announcements feed, use {@link #fetchApprovedAnnouncementsPage} instead.
+     */
     public void observeApprovedAnnouncements(String userDept, MutableLiveData<List<Announcement>> liveData) {
+        Map<String, String> filter = approvedAnnouncementsFilter(userDept);
+        fetchAllPages(
+                (range, callback) -> enqueue(dataApi.getAnnouncements(filter, range), callback),
+                new OnResult<List<Announcement>>() {
+                    @Override
+                    public void onSuccess(List<Announcement> body) {
+                        liveData.postValue(body);
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        liveData.postValue(null);
+                    }
+                });
+    }
+
+    /**
+     * Like {@link #observeApprovedAnnouncements}, but for the campus-wide Live Display kiosk:
+     * every approved announcement regardless of visibility/department. The kiosk isn't scoped
+     * to any one department — each card's own department badge (BSIT/BTLED/EDUC) identifies
+     * what a department-only post is about, the same way a General one is labeled "General".
+     */
+    public void observeAllApprovedAnnouncements(MutableLiveData<List<Announcement>> liveData) {
+        Map<String, String> filter = new HashMap<>();
+        filter.put("status", "eq." + Announcement.STATUS_APPROVED);
+        filter.put("order", "created_at.desc");
+        fetchAllPages(
+                (range, callback) -> enqueue(dataApi.getAnnouncements(filter, range), callback),
+                new OnResult<List<Announcement>>() {
+                    @Override
+                    public void onSuccess(List<Announcement> body) {
+                        liveData.postValue(body);
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        liveData.postValue(null);
+                    }
+                });
+    }
+
+    /**
+     * Loads one {@code limit}-row page of approved announcements starting at {@code offset},
+     * for infinite-scroll feeds, narrowed and ordered by {@code feed} on the server so filters
+     * and search reach past the loaded pages. Unlike {@link #observeApprovedAnnouncements},
+     * the caller decides when (or whether) to fetch the next page.
+     */
+    public void fetchApprovedAnnouncementsPage(String userDept, FeedFilter feed, int offset, int limit,
+                                                OnPageListener<Announcement> listener) {
+        Map<String, String> filter = approvedAnnouncementsFilter(userDept);
+        applyFeedFilter(filter, feed, new ArrayList<>(),
+                "title", "what", "where_info", "author_name");
+        if (feed.urgentOnly) filter.put("priority", "eq." + Announcement.PRIORITY_URGENT);
+        // id breaks created_at ties so page offsets stay stable.
+        filter.put("order", FeedFilter.SORT_OLDEST.equals(feed.sort)
+                ? "created_at.asc,id.asc" : "created_at.desc,id.desc");
+        String range = offset + "-" + (offset + limit - 1);
+        enqueue(dataApi.getAnnouncements(filter, range), new OnResult<List<Announcement>>() {
+            @Override
+            public void onSuccess(List<Announcement> body) {
+                listener.onLoaded(body != null ? body : new java.util.ArrayList<>());
+            }
+
+            @Override
+            public void onError(String message) {
+                listener.onError(message);
+            }
+        });
+    }
+
+    private Map<String, String> approvedAnnouncementsFilter(String userDept) {
         Map<String, String> filter = new HashMap<>();
         filter.put("status", "eq." + Announcement.STATUS_APPROVED);
         if (userDept != null && !userDept.isEmpty()) {
@@ -146,70 +225,65 @@ public class AnnouncementRepository extends BaseRepository {
         } else {
             filter.put("visibility", "eq.general");
         }
-        enqueue(dataApi.getAnnouncements(filter, null), new OnResult<List<Announcement>>() {
-            @Override
-            public void onSuccess(List<Announcement> body) {
-                if (body != null) {
-                    Collections.sort(body, (a, b) -> Long.compare(b.getCreatedAt(), a.getCreatedAt()));
-                }
-                liveData.postValue(body);
-            }
-
-            @Override
-            public void onError(String message) {
-                liveData.postValue(null);
-            }
-        });
+        // Explicit order is required for chunk/page offsets to be stable across requests.
+        filter.put("order", "created_at.desc");
+        return filter;
     }
 
     public void observePendingAnnouncements(MutableLiveData<List<Announcement>> liveData) {
         Map<String, String> filter = new HashMap<>();
         filter.put("status", "eq." + Announcement.STATUS_PENDING);
         filter.put("order", "created_at.asc");
-        enqueue(dataApi.getAnnouncements(filter, null), new OnResult<List<Announcement>>() {
-            @Override
-            public void onSuccess(List<Announcement> body) {
-                liveData.postValue(body);
-            }
+        fetchAllPages(
+                (range, callback) -> enqueue(dataApi.getAnnouncements(filter, range), callback),
+                new OnResult<List<Announcement>>() {
+                    @Override
+                    public void onSuccess(List<Announcement> body) {
+                        liveData.postValue(body);
+                    }
 
-            @Override
-            public void onError(String message) {
-                liveData.postValue(null);
-            }
-        });
+                    @Override
+                    public void onError(String message) {
+                        liveData.postValue(null);
+                    }
+                });
     }
 
     public void observeUserAnnouncements(String userId, MutableLiveData<List<Announcement>> liveData) {
         Map<String, String> filter = new HashMap<>();
         filter.put("author_id", "eq." + userId);
         filter.put("order", "created_at.desc");
-        enqueue(dataApi.getAnnouncements(filter, null), new OnResult<List<Announcement>>() {
-            @Override
-            public void onSuccess(List<Announcement> body) {
-                liveData.postValue(body);
-            }
+        fetchAllPages(
+                (range, callback) -> enqueue(dataApi.getAnnouncements(filter, range), callback),
+                new OnResult<List<Announcement>>() {
+                    @Override
+                    public void onSuccess(List<Announcement> body) {
+                        liveData.postValue(body);
+                    }
 
-            @Override
-            public void onError(String message) {
-                liveData.postValue(null);
-            }
-        });
+                    @Override
+                    public void onError(String message) {
+                        liveData.postValue(null);
+                    }
+                });
     }
 
     public void observeAllAnnouncements(MutableLiveData<List<Announcement>> liveData) {
         Map<String, String> filter = new HashMap<>();
         filter.put("order", "created_at.desc");
-        enqueue(dataApi.getAnnouncements(filter, null), new OnResult<List<Announcement>>() {
-            @Override
-            public void onSuccess(List<Announcement> body) {
-                liveData.postValue(body);
-            }
+        fetchAllPages(
+                (range, callback) -> enqueue(dataApi.getAnnouncements(filter, range), callback),
+                new OnResult<List<Announcement>>() {
+                    @Override
+                    public void onSuccess(List<Announcement> body) {
+                        liveData.postValue(body);
+                    }
 
-            @Override
-            public void onError(String message) {
-                liveData.postValue(null);
-            }
-        });
+                    @Override
+                    public void onError(String message) {
+                        liveData.postValue(null);
+                    }
+                });
     }
 
     public void fetchAnnouncementById(String id, OnAnnouncementFetchedListener listener) {
@@ -239,6 +313,7 @@ public class AnnouncementRepository extends BaseRepository {
         m.put("what", a.getWhat());
         m.put("who", a.getWho());
         m.put("when_info", a.getWhen());
+        m.put("event_date", a.getEventDate());
         m.put("where_info", a.getWhere());
         m.put("why", a.getWhy());
         m.put("additional_info", a.getAdditionalInfo());

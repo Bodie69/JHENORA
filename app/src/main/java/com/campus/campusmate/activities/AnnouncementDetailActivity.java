@@ -13,6 +13,7 @@ import com.campus.campusmate.databinding.ActivityAnnouncementDetailBinding;
 import com.campus.campusmate.models.Announcement;
 import com.campus.campusmate.utils.Constants;
 import com.campus.campusmate.utils.DateUtils;
+import com.campus.campusmate.utils.DepartmentLogos;
 import com.campus.campusmate.utils.UiUtils;
 import com.campus.campusmate.viewmodels.AnnouncementViewModel;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -54,14 +55,16 @@ public class AnnouncementDetailActivity extends BaseActivity<ActivityAnnouncemen
             }
         });
 
-        viewModel.successMessage.observe(this, msg -> {
+        viewModel.successMessage.observe(this, msgEvent -> {
+            String msg = msgEvent != null ? msgEvent.getContentIfNotHandled() : null;
             if (msg != null) {
                 UiUtils.showToast(this, getString(R.string.success_post_deleted));
                 finish();
             }
         });
 
-        viewModel.errorMessage.observe(this, msg -> {
+        viewModel.errorMessage.observe(this, msgEvent -> {
+            String msg = msgEvent != null ? msgEvent.getContentIfNotHandled() : null;
             if (msg != null) UiUtils.showToast(this, msg);
         });
     }
@@ -71,9 +74,10 @@ public class AnnouncementDetailActivity extends BaseActivity<ActivityAnnouncemen
         binding.tvAuthor.setText(a.getAuthorName() != null ? a.getAuthorName() : "");
         binding.tvDate.setText(DateUtils.formatDateTime(a.getCreatedAt()));
 
-        String dept = Announcement.VISIBILITY_GENERAL.equals(a.getVisibility())
-                ? getString(R.string.label_general) : a.getDepartment();
+        boolean isGeneral = Announcement.VISIBILITY_GENERAL.equals(a.getVisibility());
+        String dept = isGeneral ? getString(R.string.label_general) : a.getDepartment();
         binding.tvDept.setText(dept != null ? dept : "");
+        DepartmentLogos.bind(binding.tvDept, isGeneral ? Constants.DEPT_GENERAL : a.getDepartment());
 
         UiUtils.applyPriorityBadge(binding.tvPriority,
                 a.getPriority() != null ? a.getPriority() : "normal");
@@ -81,15 +85,14 @@ public class AnnouncementDetailActivity extends BaseActivity<ActivityAnnouncemen
                 a.getStatus() != null ? a.getStatus() : "pending");
 
         setFieldRow(binding.tvWhatValue, a.getWhat());
-        setFieldRow(binding.tvWhoValue, a.getWho());
         setFieldRow(binding.tvWhenValue, a.getWhen());
         setFieldRow(binding.tvWhereValue, a.getWhere());
-        setFieldRow(binding.tvWhyValue, a.getWhy());
         setFieldRow(binding.tvAdditionalValue, a.getAdditionalInfo());
 
         if (a.getImageUrl() != null && !a.getImageUrl().isEmpty()) {
             binding.ivCover.setVisibility(View.VISIBLE);
             Glide.with(this).load(a.getImageUrl()).into(binding.ivCover);
+            binding.ivCover.setOnClickListener(v -> FullScreenImageActivity.start(this, a.getImageUrl()));
         } else {
             binding.ivCover.setVisibility(View.GONE);
         }

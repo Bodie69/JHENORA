@@ -9,6 +9,7 @@ import com.campus.campusmate.base.BaseViewModel;
 import com.campus.campusmate.models.Announcement;
 import com.campus.campusmate.models.Event;
 import com.campus.campusmate.repositories.AnnouncementRepository;
+import com.campus.campusmate.repositories.DepartmentRepository;
 import com.campus.campusmate.repositories.EventRepository;
 
 import java.util.List;
@@ -34,7 +35,12 @@ public class LiveDisplayViewModel extends BaseViewModel {
     }
 
     public void loadData() {
-        announcementRepo.observeApprovedAnnouncements(null, announcements);
-        eventRepo.observeApprovedEvents(null, events);
+        // The kiosk is campus-wide, not tied to one department — it shows every approved
+        // post, General and department-scoped alike, with each card's own badge naming
+        // which (see LiveDisplayActivity#setBadges).
+        announcementRepo.observeAllApprovedAnnouncements(announcements);
+        eventRepo.observeAllApprovedEvents(events);
+        // The kiosk runs for days without restarting, so pick up logo changes on each refresh.
+        DepartmentRepository.getInstance().refreshLogoCache();
     }
 }

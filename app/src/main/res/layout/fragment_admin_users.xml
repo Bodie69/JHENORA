@@ -90,10 +90,99 @@
                 android:id="@+id/chip_orgs"
                 android:layout_width="wrap_content"
                 android:layout_height="32dp"
+                android:layout_marginEnd="8dp"
                 android:background="@drawable/bg_chip_unselected"
                 android:gravity="center"
                 android:paddingHorizontal="14dp"
                 android:text="Orgs"
+                android:textColor="@color/text_secondary"
+                android:textSize="@dimen/text_sm" />
+
+            <TextView
+                android:id="@+id/chip_admins"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_chip_unselected"
+                android:gravity="center"
+                android:paddingHorizontal="14dp"
+                android:text="@string/filter_admins"
+                android:textColor="@color/text_secondary"
+                android:textSize="@dimen/text_sm" />
+
+            <TextView
+                android:id="@+id/chip_display"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:background="@drawable/bg_chip_unselected"
+                android:gravity="center"
+                android:paddingHorizontal="14dp"
+                android:text="@string/filter_display"
+                android:textColor="@color/text_secondary"
+                android:textSize="@dimen/text_sm" />
+
+        </LinearLayout>
+
+    </HorizontalScrollView>
+
+    <!-- Department filter chips -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/surface"
+        android:paddingHorizontal="@dimen/spacing_base"
+        android:paddingBottom="@dimen/spacing_sm"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/chip_dept_all"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_chip_unselected"
+                android:gravity="center"
+                android:paddingHorizontal="14dp"
+                android:text="@string/filter_all_departments"
+                android:textColor="@color/text_secondary"
+                android:textSize="@dimen/text_sm" />
+
+            <TextView
+                android:id="@+id/chip_dept_bsit"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_chip_unselected"
+                android:gravity="center"
+                android:paddingHorizontal="14dp"
+                android:text="BSIT"
+                android:textColor="@color/text_secondary"
+                android:textSize="@dimen/text_sm" />
+
+            <TextView
+                android:id="@+id/chip_dept_btled"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/bg_chip_unselected"
+                android:gravity="center"
+                android:paddingHorizontal="14dp"
+                android:text="BTLED"
+                android:textColor="@color/text_secondary"
+                android:textSize="@dimen/text_sm" />
+
+            <TextView
+                android:id="@+id/chip_dept_educ"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:background="@drawable/bg_chip_unselected"
+                android:gravity="center"
+                android:paddingHorizontal="14dp"
+                android:text="EDUC"
                 android:textColor="@color/text_secondary"
                 android:textSize="@dimen/text_sm" />
 

@@ -8,6 +8,7 @@ import androidx.lifecycle.MutableLiveData;
 import com.campus.campusmate.base.BaseViewModel;
 import com.campus.campusmate.models.User;
 import com.campus.campusmate.repositories.UserRepository;
+import com.campus.campusmate.services.RealtimeService;
 import com.campus.campusmate.utils.SessionManager;
 
 public class AuthViewModel extends BaseViewModel {
@@ -35,6 +36,7 @@ public class AuthViewModel extends BaseViewModel {
                 currentUser.postValue(user);
                 setLoading(false);
                 loginSuccess.postValue(true);
+                RealtimeService.start(getApplication());
             }
 
             @Override
@@ -79,6 +81,7 @@ public class AuthViewModel extends BaseViewModel {
     }
 
     public void logout() {
+        RealtimeService.stop(getApplication());
         userRepo.logout();
     }
 

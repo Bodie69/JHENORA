@@ -94,18 +94,27 @@ public class OrganizationRepository extends BaseRepository {
         });
     }
 
+    /**
+     * Loads every organization row, walked in
+     * {@link com.campus.campusmate.utils.Constants#BULK_FETCH_CHUNK_SIZE} chunks instead of one
+     * unbounded request — this feeds both the admin dashboard org count and the Orgs browse list.
+     */
     public void observeAllOrganizations(MutableLiveData<List<Organization>> liveData) {
-        enqueue(dataApi.getOrganizations(new HashMap<>()), new OnResult<List<Organization>>() {
-            @Override
-            public void onSuccess(List<Organization> body) {
-                liveData.postValue(body);
-            }
+        Map<String, String> filter = new HashMap<>();
+        filter.put("order", "created_at.asc");
+        fetchAllPages(
+                (range, callback) -> enqueue(dataApi.getOrganizationsPaged(filter, range), callback),
+                new OnResult<List<Organization>>() {
+                    @Override
+                    public void onSuccess(List<Organization> body) {
+                        liveData.postValue(body);
+                    }
 
-            @Override
-            public void onError(String message) {
-                liveData.postValue(null);
-            }
-        });
+                    @Override
+                    public void onError(String message) {
+                        liveData.postValue(null);
+                    }
+                });
     }
 
     private Map<String, Object> buildOrgPatch(Organization o) {

@@ -3,18 +3,17 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background"
+    android:background="@color/m3_surface_container_low"
     android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:layout_margin="@dimen/spacing_base"
-        android:background="@drawable/bg_search"
+        android:background="@drawable/bg_search_pill"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="8dp">
+        android:paddingHorizontal="16dp">
 
         <ImageView
             android:id="@+id/iv_search"
@@ -22,7 +21,7 @@
             android:layout_height="20dp"
             android:src="@drawable/ic_search"
             android:contentDescription="@null"
-            app:tint="@color/text_secondary" />
+            app:tint="@color/m3_on_surface_variant" />
 
         <EditText
             android:id="@+id/et_search"
@@ -31,18 +30,118 @@
             android:layout_weight="1"
             android:layout_marginStart="12dp"
             android:background="@android:color/transparent"
-            android:hint="Search Mechanic"
-            android:textSize="14sp"
+            android:hint="Search"
+            android:textColor="@color/m3_on_surface"
+            android:textColorHint="@color/m3_on_surface_variant"
+            android:textSize="@dimen/text_base"
+            android:imeOptions="actionSearch"
             android:inputType="text" />
 
-        <ImageView
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:src="@drawable/bg_status_pending"
-            android:contentDescription="@null"
-            app:tint="@color/primary" />
-
     </LinearLayout>
+
+    <!-- Status filter -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="@dimen/spacing_base"
+            android:paddingBottom="8dp">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_status_all"
+                style="@style/Widget.JHENORA.Chip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/filter_all" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_pending"
+                style="@style/Widget.JHENORA.Chip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/filter_pending" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_approved"
+                style="@style/Widget.JHENORA.Chip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/filter_approved" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_rejected"
+                style="@style/Widget.JHENORA.Chip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/filter_rejected" />
+
+        </LinearLayout>
+
+    </HorizontalScrollView>
+
+    <!-- Scope filter -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingHorizontal="@dimen/spacing_base"
+            android:paddingBottom="@dimen/spacing_sm">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_scope_all"
+                style="@style/Widget.JHENORA.Chip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/filter_all_departments" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_general"
+                style="@style/Widget.JHENORA.Chip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="@string/filter_general" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_bsit"
+                style="@style/Widget.JHENORA.Chip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="BSIT" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_btled"
+                style="@style/Widget.JHENORA.Chip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:text="BTLED" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chip_educ"
+                style="@style/Widget.JHENORA.Chip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="EDUC" />
+
+        </LinearLayout>
+
+    </HorizontalScrollView>
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -63,7 +162,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:text="No items found"
-            android:textColor="@color/text_secondary"
+            android:textColor="@color/m3_on_surface_variant"
             android:visibility="gone" />
 
     </FrameLayout>

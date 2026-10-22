@@ -1,12 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#2563EB</color>
-    <color name="primary_dark">#1D4ED8</color>
-    <color name="primary_light">#DBEAFE</color>
-    <color name="secondary">#3B82F6</color>
-    <color name="background">#F8F9FB</color>
+    <!-- Launcher icon background (sampled from the app icon artwork). -->
+    <color name="ic_launcher_background">#0B4AC8</color>
+    <!-- Brand depth palette, sampled from the JHENORA logo: deep navy -> royal blue ->
+         electric blue, with a cyan glow. Used by the gradient drawables (bg_brand_*). -->
+    <color name="brand_deep">#00237A</color>
+    <color name="brand_mid">#0047C2</color>
+    <color name="brand_bright">#1E88FF</color>
+    <color name="brand_glow">#4FC3F7</color>
+    <color name="brand_glow_soft">#404FC3F7</color>
+    <color name="brand_shadow">#330040B0</color>
+    <color name="brand_surface_tint">#F7FAFF</color>
+
+    <color name="primary">#0057D9</color>
+    <color name="primary_dark">#0040B0</color>
+    <color name="primary_light">#E3EDFF</color>
+    <color name="secondary">#1E88FF</color>
+    <color name="background">#F3F6FC</color>
     <color name="surface">#FFFFFF</color>
-    <color name="text_primary">#1E293B</color>
+    <color name="text_primary">#0F1B33</color>
     <color name="text_secondary">#64748B</color>
     <color name="text_hint">#94A3B8</color>
     <color name="text_on_primary">#FFFFFF</color>
@@ -16,33 +28,100 @@
     <color name="warning_light">#FEF3C7</color>
     <color name="danger">#DC2626</color>
     <color name="danger_light">#FEE2E2</color>
-    <color name="divider">#E2E8F0</color>
+    <color name="divider">#E1E8F5</color>
     <color name="stroke">#CBD5E1</color>
     <color name="overlay">#80000000</color>
     <color name="transparent">#00000000</color>
     <color name="nav_bar">#FFFFFF</color>
     <color name="role_admin">#7C3AED</color>
     <color name="role_admin_light">#EDE9FE</color>
-    <color name="role_faculty">#2563EB</color>
-    <color name="role_faculty_light">#DBEAFE</color>
+    <color name="role_faculty">#0057D9</color>
+    <color name="role_faculty_light">#E3EDFF</color>
     <color name="role_student">#16A34A</color>
     <color name="role_student_light">#DCFCE7</color>
     <color name="role_organization">#F59E0B</color>
     <color name="role_organization_light">#FEF3C7</color>
-    <color name="dept_bsit">#2563EB</color>
+    <color name="dept_bsit">#0057D9</color>
     <color name="dept_btled">#16A34A</color>
     <color name="dept_educ">#F59E0B</color>
     <color name="priority_urgent">#DC2626</color>
     <color name="priority_high">#F59E0B</color>
-    <color name="priority_normal">#3B82F6</color>
+    <color name="priority_normal">#1E88FF</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="gray_100">#F1F5F9</color>
-    <color name="gray_200">#E2E8F0</color>
+    <color name="gray_100">#EFF3FA</color>
+    <color name="gray_200">#E1E8F5</color>
     <color name="gray_300">#CBD5E1</color>
     <color name="gray_400">#94A3B8</color>
     <color name="gray_500">#64748B</color>
     <color name="gray_600">#475569</color>
     <color name="gray_800">#1E293B</color>
     <color name="gray_900">#0F172A</color>
+
+    <!-- Calendar agenda — pastel card palette (cycled per event card) -->
+    <color name="cal_pastel_purple">#E3DDF7</color>
+    <color name="cal_pastel_blue">#D9EAF9</color>
+    <color name="cal_pastel_green">#DCEBDD</color>
+    <color name="cal_pastel_gray">#E5E4E8</color>
+    <color name="cal_pastel_coral">#F6DCD5</color>
+    <color name="cal_pastel_yellow">#F7EDD3</color>
+    <color name="cal_on_pastel">#22252B</color>
+    <color name="cal_on_pastel_variant">#5B5E66</color>
+    <color name="cal_badge_bg">#F0553B</color>
+    <color name="cal_badge_text">#FFFFFF</color>
+    <color name="cal_avatar_bg">#CCFFFFFF</color>
+
+    <!-- Material 3 color roles — static brand-derived scheme used by Theme.JHENORA
+         (list screens, cards, forms). Not dynamic/wallpaper-based: the app keeps a
+         fixed brand identity per the White Paper design spec. -->
+    <color name="m3_primary">#0057D9</color>
+    <color name="m3_on_primary">#FFFFFF</color>
+    <color name="m3_primary_container">#DCE8FF</color>
+    <color name="m3_on_primary_container">#001A52</color>
+    <color name="m3_secondary">#475569</color>
+    <color name="m3_on_secondary">#FFFFFF</color>
+    <color name="m3_secondary_container">#E2E8F0</color>
+    <color name="m3_on_secondary_container">#1E293B</color>
+    <color name="m3_tertiary">#B45309</color>
+    <color name="m3_on_tertiary">#FFFFFF</color>
+    <color name="m3_tertiary_container">#FEF3C7</color>
+    <color name="m3_on_tertiary_container">#78350F</color>
+    <color name="m3_error">#DC2626</color>
+    <color name="m3_on_error">#FFFFFF</color>
+    <color name="m3_error_container">#FEE2E2</color>
+    <color name="m3_on_error_container">#7F1D1D</color>
+    <color name="m3_surface">#FFFFFF</color>
+    <color name="m3_on_surface">#0F1B33</color>
+    <color name="m3_surface_variant">#EFF3FA</color>
+    <color name="m3_on_surface_variant">#64748B</color>
+    <color name="m3_outline">#C5D0E3</color>
+    <color name="m3_outline_variant">#E1E8F5</color>
+    <color name="m3_surface_container_lowest">#FFFFFF</color>
+    <color name="m3_surface_container_low">#F3F6FC</color>
+    <color name="m3_surface_container">#EBF0F9</color>
+    <color name="m3_surface_container_high">#E3EAF6</color>
+    <color name="m3_surface_container_highest">#DAE3F2</color>
+    <color name="m3_inverse_surface">#0F1B33</color>
+    <color name="m3_inverse_on_surface">#F8F9FB</color>
+
+    <!-- Live Display — "White Paper" kiosk palette. Brand-fixed (no Material You dynamic
+         color), matching the rest of the app instead of a separate dark kiosk look. -->
+    <color name="ld_background">#F3F6FC</color>
+    <color name="ld_surface">#FFFFFF</color>
+    <color name="ld_surface_variant">#F1F5F9</color>
+    <color name="ld_on_surface">#1E293B</color>
+    <color name="ld_on_surface_variant">#64748B</color>
+    <color name="ld_outline">#E1E8F5</color>
+    <color name="ld_primary">#0057D9</color>
+    <color name="ld_on_primary">#FFFFFF</color>
+    <color name="ld_primary_container">#DCE8FF</color>
+    <color name="ld_on_primary_container">#001A52</color>
+    <color name="ld_secondary">#64748B</color>
+    <color name="ld_tertiary">#B45309</color>
+    <color name="ld_on_tertiary">#FFFFFF</color>
+    <color name="ld_tertiary_container">#FEF3C7</color>
+    <color name="ld_on_tertiary_container">#78350F</color>
+    <color name="ld_glass_surface">#F2FFFFFF</color>
+    <color name="ld_glass_surface_strong">#FFFFFFFF</color>
+    <color name="ld_glass_stroke">#E1E8F5</color>
 </resources>

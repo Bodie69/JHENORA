@@ -5,12 +5,26 @@
     android:layout_height="match_parent"
     android:background="@color/background">
 
-    <!-- Hero area with gradient -->
+    <!-- Hero area: blurred campus photo under a brand-blue wash (hero_bg). -->
+    <ImageView
+        android:id="@+id/iv_hero_photo"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:contentDescription="@null"
+        android:scaleType="centerCrop"
+        android:src="@drawable/welcome_campus"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHeight_percent="0.55"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0" />
+
     <View
         android:id="@+id/hero_bg"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:background="@drawable/bg_primary_gradient"
+        android:background="@drawable/bg_welcome_hero_scrim"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHeight_percent="0.55"
@@ -23,7 +37,7 @@
         android:layout_width="100dp"
         android:layout_height="100dp"
         android:layout_marginTop="80dp"
-        android:src="@drawable/ic_logo"
+        android:src="@drawable/ic_logo_full"
         android:contentDescription="Logo"
         android:scaleType="centerCrop"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.JHENORA.Circle"

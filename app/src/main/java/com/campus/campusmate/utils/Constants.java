@@ -20,6 +20,7 @@ public final class Constants {
     public static final String DB_ANNOUNCEMENTS = "announcements";
     public static final String DB_EVENTS = "events";
     public static final String DB_ORGANIZATIONS = "organizations";
+    public static final String DB_DEPARTMENTS = "departments";
     public static final String DB_AUDIT_LOGS = "audit_logs";
 
     // --- Storage Folder Paths (within bucket) ---
@@ -27,6 +28,7 @@ public final class Constants {
     public static final String STORAGE_EVENTS = "events";
     public static final String STORAGE_PROFILES = "profiles";
     public static final String STORAGE_ORGANIZATIONS = "organizations";
+    public static final String STORAGE_DEPARTMENTS = "departments";
 
     // --- Intent Extras ---
     public static final String EXTRA_ANNOUNCEMENT_ID = "announcement_id";
@@ -34,6 +36,7 @@ public final class Constants {
     public static final String EXTRA_USER_ID = "user_id";
     public static final String EXTRA_SOURCE = "source";
     public static final String EXTRA_EDIT_MODE = "edit_mode";
+    public static final String EXTRA_IMAGE_URL = "image_url";
 
     // --- SharedPreferences Keys ---
     public static final String PREF_NAME = "campusmate_prefs";
@@ -55,6 +58,7 @@ public final class Constants {
     public static final String CHANNEL_EVENTS = "channel_events";
     public static final String CHANNEL_APPROVALS = "channel_approvals";
     public static final String CHANNEL_UPDATES = "channel_updates";
+    public static final String CHANNEL_REALTIME = "channel_realtime_sync";
 
     // --- Notification IDs ---
     public static final int NOTIF_ID_ANNOUNCEMENT = 1001;
@@ -62,7 +66,11 @@ public final class Constants {
     public static final int NOTIF_ID_APPROVAL = 1003;
 
     // --- Pagination and Limits ---
+    /** Page size for infinite-scroll feeds (Announcements, Events). */
     public static final int PAGE_SIZE = 20;
+    /** Row count per request when a repository needs "the whole table" (stats, live display,
+     *  client-filtered admin lists) — walked in chunks instead of one unbounded request. */
+    public static final int BULK_FETCH_CHUNK_SIZE = 200;
     public static final int HOME_PREVIEW_COUNT = 5;
 
     // --- Image Processing ---
@@ -98,8 +106,21 @@ public final class Constants {
     public static final String VISIBILITY_DEPARTMENT = "department";
 
     // --- Live Display Settings ---
+    // Minimum time each card stays up; also the full dwell time when its description fits
+    // without scrolling. A card whose description needs to auto-scroll stays up longer (see
+    // LIVE_DISPLAY_SCROLL_*), so the whole thing is readable instead of being cut off.
     public static final long LIVE_DISPLAY_SLIDE_INTERVAL_MS = 8000L;
     public static final long LIVE_DISPLAY_REFRESH_INTERVAL_MS = 60000L;
+    // "Time bomb": an announcement has no explicit expiry field, so it drops out of the
+    // rotation this long after being posted. Events instead use their own endDate (see
+    // Event#isPast()) since that's an explicit, author-set expiry.
+    public static final long LIVE_DISPLAY_ANNOUNCEMENT_MAX_AGE_MS = 7L * 24 * 60 * 60 * 1000;
+    // Auto-scroll pacing for an overflowing description: a slow, easy-to-read speed, plus a
+    // pause at the top (let the reader notice the card first) and at the bottom (let them
+    // finish reading the last line before the card rotates out).
+    public static final float LIVE_DISPLAY_SCROLL_DP_PER_SEC = 24f;
+    public static final long LIVE_DISPLAY_SCROLL_HOLD_TOP_MS = 1500L;
+    public static final long LIVE_DISPLAY_SCROLL_HOLD_BOTTOM_MS = 2000L;
 
     // --- Animation Durations (ms) ---
     public static final int ANIM_DURATION_SHORT = 200;

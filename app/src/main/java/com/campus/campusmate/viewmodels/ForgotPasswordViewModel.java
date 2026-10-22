@@ -14,7 +14,7 @@ public class ForgotPasswordViewModel extends AndroidViewModel {
     private final UserRepository userRepo;
 
     public final MutableLiveData<Boolean> isLoading = new MutableLiveData<>(false);
-    public final MutableLiveData<String> errorMessage = new MutableLiveData<>();
+    public final MutableLiveData<com.campus.campusmate.utils.Event<String>> errorMessage = new MutableLiveData<>();
     public final MutableLiveData<Boolean> otpSent = new MutableLiveData<>();
     public final MutableLiveData<Boolean> otpVerified = new MutableLiveData<>();
     public final MutableLiveData<Boolean> passwordResetSuccess = new MutableLiveData<>();
@@ -37,7 +37,7 @@ public class ForgotPasswordViewModel extends AndroidViewModel {
             @Override
             public void onError(String message) {
                 isLoading.postValue(false);
-                errorMessage.postValue(message);
+                errorMessage.postValue(new com.campus.campusmate.utils.Event<>(message));
             }
         });
     }
@@ -55,7 +55,7 @@ public class ForgotPasswordViewModel extends AndroidViewModel {
                     @Override
                     public void onError(String message) {
                         isLoading.postValue(false);
-                        errorMessage.postValue(message);
+                        errorMessage.postValue(new com.campus.campusmate.utils.Event<>(message));
                     }
                 });
     }
@@ -72,7 +72,7 @@ public class ForgotPasswordViewModel extends AndroidViewModel {
             @Override
             public void onError(String message) {
                 isLoading.postValue(false);
-                errorMessage.postValue(message);
+                errorMessage.postValue(new com.campus.campusmate.utils.Event<>(message));
             }
         });
     }

@@ -27,20 +27,24 @@ create table if not exists public.departments (
     code        text not null unique,
     description text,
     color_hex   text,
+    logo_url    text,   -- department logo in the campusmate bucket; '' = none
     created_at  bigint not null
 );
+
+alter table public.departments add column if not exists logo_url text;
 
 create index if not exists idx_departments_name on public.departments(name);
 create index if not exists idx_departments_code on public.departments(code);
 
 -- Seed departments
-insert into public.departments (name, code, color_hex, created_at)
-values ('BSIT', 'BSIT', '#007AFF', extract(epoch from now())::bigint * 1000),
-       ('BTLED', 'BTLED', '#34C759', extract(epoch from now())::bigint * 1000),
-       ('EDUC', 'EDUC', '#FF9500', extract(epoch from now())::bigint * 1000),
-       ('General', 'GEN', '#8E8E93', extract(epoch from now())::bigint * 1000)
+insert into public.departments (name, code, description, color_hex, created_at)
+values ('BSIT', 'BSIT', 'Bachelor of Science in Information Technology', '#007AFF', extract(epoch from now())::bigint * 1000),
+       ('BTLED', 'BTLED', 'Bachelor of Technology and Livelihood Education', '#34C759', extract(epoch from now())::bigint * 1000),
+       ('EDUC', 'EDUC', 'Bachelor of Education', '#FF9500', extract(epoch from now())::bigint * 1000),
+       ('General', 'GEN', 'Campus-wide (all departments)', '#8E8E93', extract(epoch from now())::bigint * 1000)
 on conflict (name) do update set
     code = excluded.code,
+    description = coalesce(public.departments.description, excluded.description),
     color_hex = excluded.color_hex;
 
 -- ============================================================
@@ -105,6 +109,10 @@ create table if not exists public.announcements (
     category          text,
     rejection_reason  text,
     approved_by       text,
+    -- Real, structured date/time the announcement is about (set via a date/time
+    -- picker, unlike the free-text when_info) — drives Live Display's time-bomb
+    -- expiry; unset (null) falls back to a fixed age cutoff from created_at.
+    event_date        bigint,
     created_at        bigint not null,
     updated_at        bigint,
     approved_at       bigint
@@ -198,7 +206,7 @@ create table if not exists public.audit_logs (
     user_id      uuid,
     user_email   text,
     action       text not null check (action in ('create','update','delete','approve','reject','login','logout')),
-    target_type  text not null check (target_type in ('announcement','event','user','organization')),
+    target_type  text not null check (target_type in ('announcement','event','user','organization','department')),
     target_id    text,
     details      text,
     timestamp    bigint not null
@@ -239,6 +247,19 @@ returns text
 language sql stable security definer set search_path = public
 as $$
     select department from public.users where uid = auth.uid();
+$$;
+
+-- The Live Display kiosk account (role 'live_display') has no department of its own — it's
+-- campus-wide signage, not scoped to one department — so current_department() is null for it
+-- and `department = null` is never true in SQL. Without this, a real (non-admin) kiosk
+-- account could only ever see General-visibility posts, no matter what the client queries for.
+create or replace function public.is_display()
+returns boolean
+language sql stable security definer set search_path = public
+as $$
+    select exists (
+        select 1 from public.users where uid = auth.uid() and role = 'live_display'
+    );
 $$;
 
 -- Triggers: block non-admins from changing privileged columns even on rows
@@ -294,6 +315,7 @@ alter table public.events enable row level security;
 alter table public.organizations enable row level security;
 alter table public.notifications enable row level security;
 alter table public.audit_logs enable row level security;
+alter table public.departments enable row level security;
 
 -- Drop existing policies if they exist (to avoid errors on re-run)
 drop policy if exists "users_select_self_or_admin" on public.users;
@@ -321,6 +343,11 @@ drop policy if exists "notifications_update_own" on public.notifications;
 drop policy if exists "audit_logs_insert_own" on public.audit_logs;
 drop policy if exists "audit_logs_select_admin" on public.audit_logs;
 
+drop policy if exists "departments_select" on public.departments;
+drop policy if exists "departments_admin_insert" on public.departments;
+drop policy if exists "departments_admin_update" on public.departments;
+drop policy if exists "departments_admin_delete" on public.departments;
+
 -- users
 create policy "users_select_self_or_admin"
     on public.users for select
@@ -344,6 +371,7 @@ create policy "announcements_select"
     to authenticated
     using (
         public.is_admin()
+        or (public.is_display() and status = 'approved')
         or author_id = auth.uid()
         or (status = 'approved' and (visibility = 'general' or department = public.current_department()))
     );
@@ -370,6 +398,7 @@ create policy "events_select"
     to authenticated
     using (
         public.is_admin()
+        or (public.is_display() and status = 'approved')
         or author_id = auth.uid()
         or (status = 'approved' and (visibility = 'general' or department = public.current_department()))
     );
@@ -409,6 +438,28 @@ create policy "organizations_admin_update"
 
 create policy "organizations_admin_delete"
     on public.organizations for delete
+    to authenticated
+    using (public.is_admin());
+
+-- departments (readable by everyone, incl. pre-login registration; writes are admin-only)
+create policy "departments_select"
+    on public.departments for select
+    to anon, authenticated
+    using (true);
+
+create policy "departments_admin_insert"
+    on public.departments for insert
+    to authenticated
+    with check (public.is_admin());
+
+create policy "departments_admin_update"
+    on public.departments for update
+    to authenticated
+    using (public.is_admin())
+    with check (public.is_admin());
+
+create policy "departments_admin_delete"
+    on public.departments for delete
     to authenticated
     using (public.is_admin());
 
@@ -452,18 +503,39 @@ create policy "campusmate_public_read"
     on storage.objects for select
     using (bucket_id = 'campusmate');
 
+-- Writes anywhere in the bucket need a signed-in user; the departments/ folder (department
+-- logos) is admin-only, matching the admin-only write policies on public.departments.
+-- profiles/<uid>/ is writable only by that user (or an admin); see
+-- restrict_profile_photo_storage.sql.
 create policy "campusmate_authenticated_upload"
     on storage.objects for insert
     to authenticated
-    with check (bucket_id = 'campusmate');
+    with check (bucket_id = 'campusmate'
+                and (name not like 'departments/%' or public.is_admin())
+                and (name not like 'profiles/%'
+                     or (storage.foldername(name))[2] = auth.uid()::text
+                     or public.is_admin()));
 
 create policy "campusmate_authenticated_update"
     on storage.objects for update
     to authenticated
-    using (bucket_id = 'campusmate')
-    with check (bucket_id = 'campusmate');
+    using (bucket_id = 'campusmate'
+           and (name not like 'departments/%' or public.is_admin())
+           and (name not like 'profiles/%'
+                or (storage.foldername(name))[2] = auth.uid()::text
+                or public.is_admin()))
+    with check (bucket_id = 'campusmate'
+                and (name not like 'departments/%' or public.is_admin())
+                and (name not like 'profiles/%'
+                     or (storage.foldername(name))[2] = auth.uid()::text
+                     or public.is_admin()));
 
 create policy "campusmate_authenticated_delete"
     on storage.objects for delete
     to authenticated
-    using (bucket_id = 'campusmate');
+    using (bucket_id = 'campusmate'
+           and (name not like 'departments/%' or public.is_admin())
+           and (name not like 'profiles/%'
+                or (storage.foldername(name))[2] = auth.uid()::text
+                or name = 'profiles/profile_' || auth.uid()::text || '.jpg'
+                or public.is_admin()));

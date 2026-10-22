@@ -8,7 +8,10 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.campus.campusmate.base.BaseViewModel;
 import com.campus.campusmate.models.Event;
+import com.campus.campusmate.models.FeedFilter;
+import com.campus.campusmate.repositories.BaseRepository.OnPageListener;
 import com.campus.campusmate.repositories.EventRepository;
+import com.campus.campusmate.utils.Constants;
 import com.campus.campusmate.utils.SupabaseStorage;
 
 import java.util.ArrayList;
@@ -18,13 +21,29 @@ public class EventViewModel extends BaseViewModel {
 
     private final EventRepository repo;
 
+    /**
+     * The complete approved-events set for {@code userDept} (see {@link #loadApprovedEvents}).
+     * Kept as a full, non-paginated list because {@code CalendarFragment} needs every event to
+     * mark arbitrary dates, not just whatever page the Events tab feed has scrolled to.
+     */
     public final MutableLiveData<List<Event>> events = new MutableLiveData<>(new ArrayList<>());
     public final MutableLiveData<List<Event>> pendingEvents = new MutableLiveData<>(new ArrayList<>());
     public final MutableLiveData<List<Event>> userEvents = new MutableLiveData<>(new ArrayList<>());
     public final MutableLiveData<Event> loadedEvent = new MutableLiveData<>();
-    public final MutableLiveData<String> successMessage = new MutableLiveData<>();
-    public final MutableLiveData<String> searchQuery = new MutableLiveData<>("");
-    public final MutableLiveData<String> filterDept = new MutableLiveData<>("All");
+    public final MutableLiveData<com.campus.campusmate.utils.Event<String>> successMessage = new MutableLiveData<>();
+
+    /** Infinite-scroll feed backing the Events tab list; see {@link #loadEventsFeed}. */
+    public final MutableLiveData<List<Event>> eventsFeed = new MutableLiveData<>(new ArrayList<>());
+    public final MutableLiveData<Boolean> isLoadingMoreEvents = new MutableLiveData<>(false);
+
+    private String feedDept;
+    private int feedOffset = 0;
+    private boolean feedHasMore = true;
+    private boolean feedFetching = false;
+    /** Feed filter/search/sort. Lives here so it survives rotation and fragment recreation. */
+    private FeedFilter feedFilter = FeedFilter.defaults();
+    /** Bumped on every feed restart so responses for a superseded filter are dropped. */
+    private int feedGeneration = 0;
 
     public EventViewModel(@NonNull Application application) {
         super(application);
@@ -69,6 +88,7 @@ public class EventViewModel extends BaseViewModel {
 
             @Override
             public void onFailure(String errorMessage) {
+                _errorMessage.postValue(new com.campus.campusmate.utils.Event<>("Image upload failed, submitting without image"));
                 submitOrUpdate(event, isEdit);
             }
         });
@@ -82,8 +102,79 @@ public class EventViewModel extends BaseViewModel {
         }
     }
 
+    /** Loads the complete approved-events set for {@code userDept} (Calendar, Home preview). */
     public void loadApprovedEvents(String userDept) {
         repo.observeApprovedEvents(userDept, events);
+    }
+
+    public FeedFilter getFeedFilter() {
+        return feedFilter;
+    }
+
+    /** Applies {@code filter} to the Events tab feed, reloading from page one if it changed. */
+    public void setFeedFilter(FeedFilter filter) {
+        if (filter.equals(feedFilter)) return;
+        feedFilter = filter;
+        loadEventsFeed(feedDept);
+    }
+
+    /** (Re)starts the Events tab's infinite-scroll feed from the first page for {@code userDept}. */
+    public void loadEventsFeed(String userDept) {
+        feedDept = userDept;
+        feedOffset = 0;
+        feedHasMore = true;
+        feedFetching = true;
+        int generation = ++feedGeneration;
+        isLoadingMoreEvents.postValue(false);
+        repo.fetchApprovedEventsPage(userDept, feedFilter, 0, Constants.PAGE_SIZE, new OnPageListener<Event>() {
+            @Override
+            public void onLoaded(List<Event> page) {
+                if (generation != feedGeneration) return;
+                feedFetching = false;
+                feedOffset = page.size();
+                feedHasMore = page.size() == Constants.PAGE_SIZE;
+                eventsFeed.postValue(page);
+            }
+
+            @Override
+            public void onError(String message) {
+                if (generation != feedGeneration) return;
+                feedFetching = false;
+                eventsFeed.postValue(null);
+            }
+        });
+    }
+
+    /**
+     * Appends the next page of the Events tab feed, if one hasn't already been requested and
+     * the previous page wasn't short. Safe to call repeatedly from a scroll listener.
+     */
+    public void loadMoreEventsFeed() {
+        if (feedFetching || !feedHasMore) return;
+        feedFetching = true;
+        int generation = feedGeneration;
+        isLoadingMoreEvents.postValue(true);
+        repo.fetchApprovedEventsPage(feedDept, feedFilter, feedOffset, Constants.PAGE_SIZE, new OnPageListener<Event>() {
+            @Override
+            public void onLoaded(List<Event> page) {
+                if (generation != feedGeneration) return;
+                feedFetching = false;
+                isLoadingMoreEvents.postValue(false);
+                feedOffset += page.size();
+                feedHasMore = page.size() == Constants.PAGE_SIZE;
+                List<Event> current = eventsFeed.getValue();
+                List<Event> combined = current != null ? new ArrayList<>(current) : new ArrayList<>();
+                combined.addAll(page);
+                eventsFeed.postValue(combined);
+            }
+
+            @Override
+            public void onError(String message) {
+                if (generation != feedGeneration) return;
+                feedFetching = false;
+                isLoadingMoreEvents.postValue(false);
+            }
+        });
     }
 
     public void loadPendingEvents() {
@@ -104,7 +195,7 @@ public class EventViewModel extends BaseViewModel {
             @Override
             public void onSuccess(String id) {
                 setLoading(false);
-                successMessage.postValue("Event submitted for approval");
+                successMessage.postValue(new com.campus.campusmate.utils.Event<>("Event submitted for approval"));
             }
 
             @Override
@@ -120,7 +211,7 @@ public class EventViewModel extends BaseViewModel {
             @Override
             public void onSuccess(String id) {
                 setLoading(false);
-                successMessage.postValue("Event updated");
+                successMessage.postValue(new com.campus.campusmate.utils.Event<>("Event updated"));
             }
 
             @Override
@@ -136,7 +227,7 @@ public class EventViewModel extends BaseViewModel {
             @Override
             public void onSuccess() {
                 setLoading(false);
-                successMessage.postValue("Event deleted");
+                successMessage.postValue(new com.campus.campusmate.utils.Event<>("Event deleted"));
             }
 
             @Override
@@ -152,7 +243,7 @@ public class EventViewModel extends BaseViewModel {
             @Override
             public void onSuccess() {
                 setLoading(false);
-                successMessage.postValue("Event approved");
+                successMessage.postValue(new com.campus.campusmate.utils.Event<>("Event approved"));
             }
 
             @Override
@@ -168,7 +259,7 @@ public class EventViewModel extends BaseViewModel {
             @Override
             public void onSuccess() {
                 setLoading(false);
-                successMessage.postValue("Event rejected");
+                successMessage.postValue(new com.campus.campusmate.utils.Event<>("Event rejected"));
             }
 
             @Override
@@ -176,25 +267,6 @@ public class EventViewModel extends BaseViewModel {
                 setError(message);
             }
         });
-    }
-
-    public List<Event> getFilteredEvents(List<Event> all, String dept, String query) {
-        if (all == null) return new ArrayList<>();
-        List<Event> filtered = new ArrayList<>();
-        String q = query != null ? query.toLowerCase().trim() : "";
-
-        for (Event e : all) {
-            boolean matchDept = "All".equals(dept)
-                    || Event.VISIBILITY_GENERAL.equals(e.getVisibility()) && "General".equals(dept)
-                    || e.getDepartment() != null && e.getDepartment().equals(dept);
-            boolean matchQuery = q.isEmpty()
-                    || (e.getTitle() != null && e.getTitle().toLowerCase().contains(q))
-                    || (e.getWhere() != null && e.getWhere().toLowerCase().contains(q))
-                    || (e.getAuthorName() != null && e.getAuthorName().toLowerCase().contains(q));
-            if (matchDept && matchQuery) filtered.add(e);
-        }
-        filtered.sort((a, b) -> Long.compare(a.getStartDate(), b.getStartDate()));
-        return filtered;
     }
 
     public List<Event> getEventsOnDate(List<Event> all, long dayStart, long dayEnd) {

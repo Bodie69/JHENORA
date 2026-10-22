@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Signature brand surface: deep navy -> royal -> electric blue on a diagonal, with a soft
+     cyan glow in the top-right corner echoing the logo's gloss. Used for headers and heroes. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="315"
+                android:startColor="@color/brand_deep"
+                android:centerColor="@color/brand_mid"
+                android:endColor="@color/brand_bright"
+                android:type="linear" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:centerX="1.0"
+                android:centerY="0.0"
+                android:gradientRadius="70%p"
+                android:startColor="@color/brand_glow_soft"
+                android:endColor="@color/transparent"
+                android:type="radial" />
+        </shape>
+    </item>
+</layer-list>

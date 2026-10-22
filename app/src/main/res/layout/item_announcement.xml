@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/card"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="@dimen/spacing_md"
     android:foreground="?attr/selectableItemBackground"
+    app:cardBackgroundColor="@color/m3_surface"
     app:cardCornerRadius="@dimen/corner_lg"
-    app:cardElevation="0dp"
-    app:strokeColor="@color/gray_200"
-    app:strokeWidth="1.5dp">
+    app:cardElevation="1dp"
+    app:rippleColor="@color/m3_primary_container"
+    app:strokeWidth="0dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -24,12 +25,15 @@
             android:visibility="invisible" />
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:orientation="vertical"
             android:padding="@dimen/spacing_base">
 
-            <!-- Top row: dept tag + priority badge -->
+            <!-- Top row: dept tag + priority/status badges. The badge group is weighted
+                 so it shrinks (and truncates via ellipsize) instead of pushing the
+                 department tag off the card on narrow screens or long labels. -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -40,10 +44,14 @@
                     android:id="@+id/tv_dept"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginEnd="6dp"
                     android:background="@drawable/bg_tag"
-                    android:paddingHorizontal="8dp"
-                    android:paddingVertical="2dp"
-                    android:textColor="@color/primary"
+                    android:ellipsize="end"
+                    android:maxWidth="110dp"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="3dp"
+                    android:singleLine="true"
+                    android:textColor="@color/m3_on_primary_container"
                     android:textSize="@dimen/text_xs"
                     android:textStyle="bold" />
 
@@ -52,26 +60,41 @@
                     android:layout_height="1dp"
                     android:layout_weight="1" />
 
-                <TextView
-                    android:id="@+id/tv_priority"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:paddingHorizontal="8dp"
-                    android:paddingVertical="2dp"
-                    android:textSize="@dimen/text_xs"
-                    android:textStyle="bold"
-                    android:visibility="gone" />
+                    android:layout_weight="1"
+                    android:gravity="end|center_vertical"
+                    android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/tv_status"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:paddingHorizontal="8dp"
-                    android:paddingVertical="2dp"
-                    android:textSize="@dimen/text_xs"
-                    android:textStyle="bold"
-                    android:visibility="gone" />
+                    <TextView
+                        android:id="@+id/tv_priority"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxWidth="90dp"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="3dp"
+                        android:singleLine="true"
+                        android:textSize="@dimen/text_xs"
+                        android:textStyle="bold"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/tv_status"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:ellipsize="end"
+                        android:maxWidth="90dp"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="3dp"
+                        android:singleLine="true"
+                        android:textSize="@dimen/text_xs"
+                        android:textStyle="bold"
+                        android:visibility="gone" />
+
+                </LinearLayout>
 
             </LinearLayout>
 
@@ -80,10 +103,10 @@
                 android:id="@+id/tv_title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="8dp"
                 android:ellipsize="end"
                 android:maxLines="2"
-                android:textColor="@color/text_primary"
+                android:textColor="@color/m3_on_surface"
                 android:textSize="@dimen/text_md"
                 android:textStyle="bold" />
 
@@ -95,14 +118,14 @@
                 android:layout_marginTop="4dp"
                 android:ellipsize="end"
                 android:maxLines="2"
-                android:textColor="@color/text_secondary"
+                android:textColor="@color/m3_on_surface_variant"
                 android:textSize="@dimen/text_sm" />
 
             <!-- Bottom row: author + date -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="10dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -113,7 +136,7 @@
                     android:layout_weight="1"
                     android:ellipsize="end"
                     android:maxLines="1"
-                    android:textColor="@color/text_secondary"
+                    android:textColor="@color/m3_on_surface_variant"
                     android:textSize="@dimen/text_xs" />
 
                 <TextView
@@ -127,6 +150,18 @@
 
         </LinearLayout>
 
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/iv_thumbnail"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginEnd="@dimen/spacing_base"
+            android:background="@drawable/bg_primary_gradient"
+            android:contentDescription="@null"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.JHENORA.Thumbnail" />
+
     </LinearLayout>
 
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

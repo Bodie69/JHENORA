@@ -52,10 +52,6 @@ public class AdminLiveDisplayFragment extends Fragment {
 
         viewModel.displayAccounts.observe(getViewLifecycleOwner(), this::refreshList);
 
-        viewModel.successMessage.observe(getViewLifecycleOwner(), msg -> {
-            if (msg != null) UiUtils.showToast(requireContext(), msg);
-        });
-
         binding.btnPreviewDisplay.setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), LiveDisplayActivity.class)));
 

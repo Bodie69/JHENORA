@@ -76,9 +76,9 @@ Welcome (splash/intro/login/register) · Home (feed + quick access) · Announcem
 
 ## Content Forms
 
-**Announcement (5W format)**: Who, What, When, Where, Why, Attachment, Department Scope, General Scope
+**Announcement**: Title, Description, Location, Date & Time, Attachment, Priority, Department Scope, General Scope
 
-**Event**: Title, Description, Who, What, When, Where, Why, Start Date, End Date, Poster, Department, General Access
+**Event**: Title, Description, Location, Poster, Start Date, End Date, Registration Link, Department Scope, General Scope
 
 ## Admin Dashboard Modules
 

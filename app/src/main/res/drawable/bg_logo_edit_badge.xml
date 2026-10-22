@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Small "edit" badge on a department logo: brand gradient with a white ring so it stands
+     out against both the blue code badge and uploaded logos. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <gradient
+        android:angle="315"
+        android:startColor="@color/brand_mid"
+        android:endColor="@color/brand_bright"
+        android:type="linear" />
+    <stroke
+        android:width="2dp"
+        android:color="@color/white" />
+</shape>

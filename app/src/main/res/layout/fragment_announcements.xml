@@ -3,15 +3,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background"
+    android:background="@color/m3_surface_container_low"
     android:orientation="vertical">
 
     <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/surface"
-        android:elevation="2dp"
+        android:background="@color/m3_surface"
         android:orientation="vertical"
         android:padding="@dimen/spacing_base"
         android:paddingTop="48dp">
@@ -20,8 +19,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/title_announcements"
-            android:textColor="@color/text_primary"
-            android:textSize="@dimen/text_2xl"
+            android:textColor="@color/m3_on_surface"
+            android:textSize="@dimen/text_3xl"
             android:textStyle="bold"
             android:fontFamily="@font/google_sans" />
 
@@ -30,10 +29,10 @@
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:layout_marginTop="@dimen/spacing_md"
-            android:background="@drawable/bg_search"
+            android:background="@drawable/bg_search_pill"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingHorizontal="12dp">
+            android:paddingHorizontal="16dp">
 
             <ImageView
                 android:id="@+id/iv_search"
@@ -41,7 +40,7 @@
                 android:layout_height="20dp"
                 android:src="@drawable/ic_search"
                 android:contentDescription="@null"
-                app:tint="@color/text_secondary" />
+                app:tint="@color/m3_on_surface_variant" />
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_search"
@@ -50,9 +49,10 @@
                 android:layout_marginStart="12dp"
                 android:background="@null"
                 android:hint="@string/hint_search_announcements"
+                android:imeOptions="actionSearch"
                 android:inputType="text"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_hint"
+                android:textColor="@color/m3_on_surface"
+                android:textColorHint="@color/m3_on_surface_variant"
                 android:textSize="@dimen/text_base" />
 
         </LinearLayout>
@@ -64,7 +64,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:scrollbars="none"
-        android:background="@color/surface">
+        android:background="@color/m3_surface">
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -73,112 +73,85 @@
             android:paddingHorizontal="@dimen/spacing_base"
             android:paddingBottom="12dp">
 
-            <TextView
+            <com.google.android.material.chip.Chip
                 android:id="@+id/chip_all"
+                style="@style/Widget.JHENORA.Chip"
                 android:layout_width="wrap_content"
-                android:layout_height="32dp"
+                android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_chip_selected"
-                android:gravity="center"
-                android:paddingHorizontal="14dp"
-                android:text="@string/filter_all"
-                android:textColor="@color/white"
-                android:textSize="@dimen/text_sm"
-                android:textStyle="bold" />
+                android:text="@string/filter_all" />
 
-            <TextView
+            <com.google.android.material.chip.Chip
                 android:id="@+id/chip_general"
+                style="@style/Widget.JHENORA.Chip"
                 android:layout_width="wrap_content"
-                android:layout_height="32dp"
+                android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_chip_unselected"
-                android:gravity="center"
-                android:paddingHorizontal="14dp"
-                android:text="@string/filter_general"
-                android:textColor="@color/text_secondary"
-                android:textSize="@dimen/text_sm" />
+                android:text="@string/filter_general" />
 
-            <TextView
+            <com.google.android.material.chip.Chip
                 android:id="@+id/chip_bsit"
+                style="@style/Widget.JHENORA.Chip"
                 android:layout_width="wrap_content"
-                android:layout_height="32dp"
+                android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_chip_unselected"
-                android:gravity="center"
-                android:paddingHorizontal="14dp"
-                android:text="BSIT"
-                android:textColor="@color/text_secondary"
-                android:textSize="@dimen/text_sm" />
+                android:text="BSIT" />
 
-            <TextView
+            <com.google.android.material.chip.Chip
                 android:id="@+id/chip_btled"
+                style="@style/Widget.JHENORA.Chip"
                 android:layout_width="wrap_content"
-                android:layout_height="32dp"
+                android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_chip_unselected"
-                android:gravity="center"
-                android:paddingHorizontal="14dp"
-                android:text="BTLED"
-                android:textColor="@color/text_secondary"
-                android:textSize="@dimen/text_sm" />
+                android:text="BTLED" />
 
-            <TextView
+            <com.google.android.material.chip.Chip
                 android:id="@+id/chip_educ"
+                style="@style/Widget.JHENORA.Chip"
                 android:layout_width="wrap_content"
-                android:layout_height="32dp"
+                android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_chip_unselected"
-                android:gravity="center"
-                android:paddingHorizontal="14dp"
-                android:text="EDUC"
-                android:textColor="@color/text_secondary"
-                android:textSize="@dimen/text_sm" />
+                android:text="EDUC" />
 
-            <TextView
+            <com.google.android.material.chip.Chip
                 android:id="@+id/chip_newest"
+                style="@style/Widget.JHENORA.Chip"
                 android:layout_width="wrap_content"
-                android:layout_height="32dp"
+                android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_chip_unselected"
-                android:gravity="center"
-                android:paddingHorizontal="14dp"
-                android:text="@string/filter_newest"
-                android:textColor="@color/text_secondary"
-                android:textSize="@dimen/text_sm" />
+                android:text="@string/filter_newest" />
 
-            <TextView
+            <com.google.android.material.chip.Chip
                 android:id="@+id/chip_oldest"
+                style="@style/Widget.JHENORA.Chip"
                 android:layout_width="wrap_content"
-                android:layout_height="32dp"
+                android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
-                android:background="@drawable/bg_chip_unselected"
-                android:gravity="center"
-                android:paddingHorizontal="14dp"
-                android:text="@string/filter_oldest"
-                android:textColor="@color/text_secondary"
-                android:textSize="@dimen/text_sm" />
+                android:text="@string/filter_oldest" />
 
-            <TextView
+            <com.google.android.material.chip.Chip
                 android:id="@+id/chip_urgent"
+                style="@style/Widget.JHENORA.Chip"
                 android:layout_width="wrap_content"
-                android:layout_height="32dp"
-                android:background="@drawable/bg_priority_urgent"
-                android:gravity="center"
-                android:paddingHorizontal="14dp"
-                android:text="@string/filter_urgent"
+                android:layout_height="wrap_content"
+                app:chipBackgroundColor="@color/danger_light"
                 android:textColor="@color/danger"
-                android:textSize="@dimen/text_sm" />
+                android:text="@string/filter_urgent" />
 
         </LinearLayout>
 
     </HorizontalScrollView>
 
-    <!-- Content -->
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-        android:id="@+id/swipe_refresh"
+    <!-- Content (FrameLayout lets the FAB float over the list rather than sit inline) -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -190,7 +163,8 @@
                 android:layout_height="match_parent"
                 android:clipToPadding="false"
                 android:paddingHorizontal="@dimen/spacing_base"
-                android:paddingVertical="@dimen/spacing_sm"
+                android:paddingTop="@dimen/spacing_sm"
+                android:paddingBottom="96dp"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
             <TextView
@@ -199,24 +173,36 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:text="@string/no_announcements"
-                android:textColor="@color/text_secondary"
+                android:textColor="@color/m3_on_surface_variant"
                 android:textSize="@dimen/text_base"
+                android:visibility="gone" />
+
+            <ProgressBar
+                android:id="@+id/progress_load_more"
+                style="?android:attr/progressBarStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="16dp"
                 android:visibility="gone" />
 
         </FrameLayout>
 
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-    <!-- FAB -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/spacing_base"
-        android:contentDescription="Create Announcement"
-        app:backgroundTint="@color/primary"
-        android:src="@android:drawable/ic_input_add"
-        android:visibility="gone" />
+        <!-- FAB -->
+        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+            android:id="@+id/fab"
+            style="@style/Widget.JHENORA.ExtendedFab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="@dimen/spacing_base"
+            android:contentDescription="Create Announcement"
+            android:text="@string/fab_new_announcement"
+            app:icon="@android:drawable/ic_input_add"
+            android:visibility="gone" />
+
+    </FrameLayout>
 
 </LinearLayout>

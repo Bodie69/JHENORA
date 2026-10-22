@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/card"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="@dimen/spacing_md"
     android:foreground="?attr/selectableItemBackground"
+    app:cardBackgroundColor="@color/m3_surface"
     app:cardCornerRadius="@dimen/corner_lg"
-    app:cardElevation="0dp"
-    app:strokeColor="@color/gray_200"
-    app:strokeWidth="1.5dp">
+    app:cardElevation="1dp"
+    app:rippleColor="@color/m3_primary_container"
+    app:strokeWidth="0dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -24,8 +25,7 @@
             android:background="@drawable/bg_primary_gradient"
             android:gravity="center"
             android:orientation="vertical"
-            android:layout_marginEnd="@dimen/spacing_base"
-            app:layout_constraintTop_toTopOf="parent">
+            android:layout_marginEnd="@dimen/spacing_base">
 
             <TextView
                 android:id="@+id/tv_day"
@@ -62,10 +62,14 @@
                     android:id="@+id/tv_dept"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginEnd="6dp"
                     android:background="@drawable/bg_tag"
-                    android:paddingHorizontal="8dp"
-                    android:paddingVertical="2dp"
-                    android:textColor="@color/primary"
+                    android:ellipsize="end"
+                    android:maxWidth="110dp"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="3dp"
+                    android:singleLine="true"
+                    android:textColor="@color/m3_on_primary_container"
                     android:textSize="@dimen/text_xs"
                     android:textStyle="bold" />
 
@@ -78,6 +82,9 @@
                     android:id="@+id/tv_status"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:maxWidth="120dp"
+                    android:singleLine="true"
                     android:textSize="@dimen/text_xs"
                     android:textStyle="bold" />
 
@@ -87,10 +94,10 @@
                 android:id="@+id/tv_title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="6dp"
                 android:ellipsize="end"
                 android:maxLines="2"
-                android:textColor="@color/text_primary"
+                android:textColor="@color/m3_on_surface"
                 android:textSize="@dimen/text_md"
                 android:textStyle="bold" />
 
@@ -101,7 +108,7 @@
                 android:layout_marginTop="2dp"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:textColor="@color/text_secondary"
+                android:textColor="@color/m3_on_surface_variant"
                 android:textSize="@dimen/text_sm" />
 
             <TextView
@@ -116,6 +123,18 @@
 
         </LinearLayout>
 
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/iv_thumbnail"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="@dimen/spacing_sm"
+            android:background="@drawable/bg_primary_gradient"
+            android:contentDescription="@null"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.JHENORA.Thumbnail" />
+
         <!-- Status dot -->
         <View
             android:id="@+id/status_dot"
@@ -123,8 +142,9 @@
             android:layout_height="8dp"
             android:layout_gravity="top"
             android:layout_marginTop="4dp"
+            android:layout_marginStart="@dimen/spacing_sm"
             android:background="@drawable/bg_circle_primary" />
 
     </LinearLayout>
 
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

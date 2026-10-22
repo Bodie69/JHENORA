@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Legacy names kept as aliases so existing layouts pick up the brand gradient. -->
+    <item name="bg_primary_gradient" type="drawable">@drawable/bg_brand_gradient</item>
+    <item name="bg_dashboard_header" type="drawable">@drawable/bg_brand_gradient</item>
+</resources>

@@ -4,16 +4,20 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.campus.campusmate.R;
 import com.campus.campusmate.models.Announcement;
 import com.campus.campusmate.models.Event;
 import com.campus.campusmate.models.User;
 import com.campus.campusmate.utils.DateUtils;
+import com.campus.campusmate.utils.Constants;
+import com.campus.campusmate.utils.DepartmentLogos;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,6 +71,7 @@ public class ApprovalAdapter extends RecyclerView.Adapter<ApprovalAdapter.ViewHo
         private final View btnApprove;
         private final View btnReject;
         private final View btnView;
+        private final ImageView ivThumbnail;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -78,6 +83,7 @@ public class ApprovalAdapter extends RecyclerView.Adapter<ApprovalAdapter.ViewHo
             btnApprove = itemView.findViewById(R.id.btn_approve);
             btnReject = itemView.findViewById(R.id.btn_reject);
             btnView = itemView.findViewById(R.id.btn_view);
+            ivThumbnail = itemView.findViewById(R.id.iv_thumbnail);
         }
 
         void bind(Object item) {
@@ -88,6 +94,7 @@ public class ApprovalAdapter extends RecyclerView.Adapter<ApprovalAdapter.ViewHo
             String authorName;
             String department;
             String visibility;
+            String imageUrl;
             long createdAt;
 
             if (isUser) {
@@ -96,6 +103,7 @@ public class ApprovalAdapter extends RecyclerView.Adapter<ApprovalAdapter.ViewHo
                 authorName = u.getEmail();
                 department = u.getDepartment();
                 visibility = null;
+                imageUrl = null;
                 createdAt = u.getCreatedAt();
             } else if (isEvent) {
                 Event e = (Event) item;
@@ -103,6 +111,7 @@ public class ApprovalAdapter extends RecyclerView.Adapter<ApprovalAdapter.ViewHo
                 authorName = e.getAuthorName();
                 department = e.getDepartment();
                 visibility = e.getVisibility();
+                imageUrl = e.getImageUrl();
                 createdAt = e.getCreatedAt();
             } else {
                 Announcement a = (Announcement) item;
@@ -110,6 +119,7 @@ public class ApprovalAdapter extends RecyclerView.Adapter<ApprovalAdapter.ViewHo
                 authorName = a.getAuthorName();
                 department = a.getDepartment();
                 visibility = a.getVisibility();
+                imageUrl = a.getImageUrl();
                 createdAt = a.getCreatedAt();
             }
 
@@ -117,9 +127,11 @@ public class ApprovalAdapter extends RecyclerView.Adapter<ApprovalAdapter.ViewHo
             if (tvAuthor != null) tvAuthor.setText(authorName != null ? authorName : "");
             if (tvDate != null) tvDate.setText(DateUtils.getRelativeTime(createdAt));
             if (tvDept != null) {
-                tvDept.setText(Announcement.VISIBILITY_GENERAL.equals(visibility)
+                boolean isGeneral = Announcement.VISIBILITY_GENERAL.equals(visibility);
+                tvDept.setText(isGeneral
                         ? context.getString(R.string.label_general)
                         : department != null ? department : "");
+                DepartmentLogos.bind(tvDept, isGeneral ? Constants.DEPT_GENERAL : department);
             }
             if (tvType != null) {
                 tvType.setText(isUser ? "User" : isEvent ? "Event" : "Announcement");
@@ -129,6 +141,15 @@ public class ApprovalAdapter extends RecyclerView.Adapter<ApprovalAdapter.ViewHo
             }
 
             if (btnView != null) btnView.setVisibility(isUser ? View.GONE : View.VISIBLE);
+
+            if (ivThumbnail != null) {
+                if (imageUrl != null && !imageUrl.isEmpty()) {
+                    ivThumbnail.setVisibility(View.VISIBLE);
+                    Glide.with(context).load(imageUrl).centerCrop().into(ivThumbnail);
+                } else {
+                    ivThumbnail.setVisibility(View.GONE);
+                }
+            }
 
             if (btnApprove != null) {
                 btnApprove.setOnClickListener(v -> {

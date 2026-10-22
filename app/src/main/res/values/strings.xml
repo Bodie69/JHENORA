@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">JHENORA</string>
-    <string name="app_tagline">Romblon State University</string>
+    <string name="app_tagline">Romblon State University · Cajidiocan Campus</string>
     <string name="app_subtitle">Your campus, connected.</string>
 
     <string name="label_email">Email Address</string>
@@ -61,10 +61,20 @@
     <string name="hint_search_announcements">Search announcements…</string>
     <string name="filter_all">All</string>
     <string name="filter_general">General</string>
+    <string name="filter_all_departments">All departments</string>
     <string name="filter_department">Department</string>
     <string name="filter_newest">Newest</string>
     <string name="filter_oldest">Oldest</string>
     <string name="filter_urgent">Urgent</string>
+    <string name="filter_upcoming">Upcoming</string>
+    <string name="filter_past">Past</string>
+    <string name="filter_any_time">All dates</string>
+    <string name="filter_pending">Pending</string>
+    <string name="filter_approved">Approved</string>
+    <string name="filter_rejected">Rejected</string>
+    <string name="filter_admins">Admins</string>
+    <string name="filter_display">Display</string>
+    <string name="no_results">No matches. Try a different filter or search.</string>
     <string name="label_priority">Priority</string>
     <string name="label_category">Category</string>
     <string name="label_visibility">Visibility</string>
@@ -77,18 +87,17 @@
 
     <string name="label_title">Title</string>
     <string name="label_what">What</string>
-    <string name="label_who">Who</string>
     <string name="label_when">When</string>
     <string name="label_where">Where</string>
-    <string name="label_why">Why</string>
     <string name="label_additional_info">Additional Information</string>
     <string name="label_registration_link">Registration Link (Optional)</string>
     <string name="hint_title">Enter title</string>
     <string name="hint_what">Describe what this is about</string>
-    <string name="hint_who">Who is this for?</string>
+    <string name="hint_description">Write a description…</string>
     <string name="hint_when">Date and time</string>
     <string name="hint_where">Venue or location</string>
-    <string name="hint_why">Purpose or reason</string>
+    <string name="hint_location">Location</string>
+    <string name="hint_date_time">Date &amp; time</string>
     <string name="hint_additional_info">Any other relevant details</string>
     <string name="hint_registration_link">https://…</string>
     <string name="btn_submit_for_approval">Submit for Approval</string>
@@ -99,6 +108,12 @@
     <string name="btn_reject">Reject</string>
     <string name="btn_update">Update</string>
     <string name="btn_add_image">Add Image</string>
+    <string name="fab_new_announcement">New Post</string>
+    <string name="fab_new_event">New Event</string>
+    <string name="section_details">Details</string>
+    <string name="section_schedule">Schedule</string>
+    <string name="section_settings">Visibility &amp; Priority</string>
+    <string name="section_settings_event">Visibility</string>
 
     <string name="title_events">Campus Events</string>
     <string name="hint_search_events">Search events…</string>
@@ -111,7 +126,10 @@
     <string name="view_monthly">Monthly</string>
     <string name="view_weekly">Weekly</string>
     <string name="view_daily">Daily</string>
-    <string name="no_events_on_date">No events on this date</string>
+    <string name="no_events_on_date">Nothing on this date</string>
+    <string name="calendar_time_range">%1$s – %2$s</string>
+    <string name="calendar_today">Today</string>
+    <string name="calendar_tomorrow">Tomorrow</string>
 
     <string name="title_profile">Profile</string>
     <string name="label_full_name">Full Name</string>
@@ -119,6 +137,7 @@
     <string name="label_post_history">Post History</string>
     <string name="label_my_events">My Events</string>
     <string name="no_event_history">No events yet</string>
+    <string name="no_posts_yet">No posts yet</string>
     <string name="btn_edit_profile">Edit Profile</string>
 
     <string name="title_admin_dashboard">Admin Dashboard</string>
@@ -146,13 +165,14 @@
     <string name="error_account_rejected">Your account registration was rejected</string>
     <string name="error_invalid_otp">Enter the verification code</string>
     <string name="error_otp_failed">Invalid or expired code. Please try again.</string>
+    <string name="error_otp_cooldown_active">Please wait before requesting another code.</string>
 
     <string name="success_registration">Registration submitted! Please verify your email.</string>
     <string name="success_post_submitted">Post submitted for approval.</string>
     <string name="success_post_approved">Post approved successfully.</string>
     <string name="success_post_rejected">Post rejected.</string>
     <string name="success_post_deleted">Post deleted.</string>
-    <string name="success_otp_sent">Verification code sent to your email.</string>
+    <string name="success_otp_sent">If an account exists for this email, a verification code has been sent.</string>
     <string name="success_password_reset_complete">Password reset successful. Please log in.</string>
 
     <string name="dialog_confirm_logout">Logout</string>
@@ -172,6 +192,7 @@
     <string name="btn_ok">OK</string>
     <string name="btn_close">Close</string>
     <string name="btn_back">Back</string>
+    <string name="content_desc_full_image">Full-size image</string>
 
     <string name="dept_bsit">BSIT</string>
     <string name="dept_btled">BTLED</string>
@@ -273,4 +294,28 @@
     <string name="label_notif_events_desc">New events posted for you</string>
     <string name="label_notif_approvals">Approvals</string>
     <string name="label_notif_approvals_desc">Items awaiting your review</string>
+
+    <!-- Admin: department logos -->
+    <string name="dept_logo_actions">Department logo. Tap to upload or change.</string>
+    <string name="dept_logo_dialog_title">%1$s logo</string>
+    <string name="dept_logo_option_change">Upload new logo</string>
+    <string name="dept_logo_option_remove">Remove logo</string>
+    <string name="dept_load_failed">Couldn\'t load departments. Reopen this tab to retry.</string>
+
+    <!-- Admin: delete user -->
+    <string name="user_delete">Delete user</string>
+    <string name="user_delete_title">Delete %1$s?</string>
+    <string name="user_delete_message">This permanently removes their login and profile, along with every announcement and event they posted. If they lead an organization, it will be left without a leader. This can\'t be undone.</string>
+    <string name="user_detail_role">Role: %1$s</string>
+    <string name="user_detail_department">Department: %1$s</string>
+
+    <!-- Profile photo -->
+    <string name="profile_photo_change">Change profile photo</string>
+    <string name="profile_photo_title">Profile photo</string>
+    <string name="profile_photo_gallery">Choose from gallery</string>
+    <string name="profile_photo_camera">Take a photo</string>
+    <string name="profile_photo_remove">Remove photo</string>
+    <string name="profile_photo_camera_unavailable">No camera app available</string>
+    <string name="profile_photo_of">Profile photo of %1$s</string>
+    <string name="app_version">Version %1$s (build %2$d)</string>
 </resources>

@@ -59,10 +59,6 @@ public class AdminOrganizationsFragment extends Fragment {
             refreshList(orgs);
         });
 
-        viewModel.successMessage.observe(getViewLifecycleOwner(), msg -> {
-            if (msg != null) UiUtils.showToast(requireContext(), msg);
-        });
-
         viewModel.allUsers.observe(getViewLifecycleOwner(), users -> {
             studentList.clear();
             if (users != null) {
@@ -79,6 +75,19 @@ public class AdminOrganizationsFragment extends Fragment {
         // Defensive re-fetch: guarantees the student list is loaded for this screen
         // even if the activity-level initial load hasn't completed yet.
         viewModel.loadAllUsers();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // This tab's ViewPager2 page is kept alive (not recreated) while another tab is
+        // shown, and organizations/students are otherwise only loaded once at Activity
+        // startup, so without this, orgs created/renamed elsewhere would sit stale here
+        // until the app is force-restarted.
+        if (viewModel != null) {
+            viewModel.loadOrganizations();
+            viewModel.loadAllUsers();
+        }
     }
 
     private void setupSearch() {

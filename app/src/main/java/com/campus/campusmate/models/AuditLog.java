@@ -14,6 +14,7 @@ public class AuditLog {
     public static final String TARGET_EVENT = "event";
     public static final String TARGET_USER = "user";
     public static final String TARGET_ORGANIZATION = "organization";
+    public static final String TARGET_DEPARTMENT = "department";
 
     private String id;
     private String userId;

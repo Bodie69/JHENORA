@@ -6,7 +6,9 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.campus.campusmate.models.AuditLog;
 import com.campus.campusmate.models.Event;
+import com.campus.campusmate.models.FeedFilter;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -128,7 +130,94 @@ public class EventRepository extends BaseRepository {
         });
     }
 
+    /**
+     * Loads the complete approved-and-visible-to-{@code userDept} event set, walked in
+     * {@link com.campus.campusmate.utils.Constants#BULK_FETCH_CHUNK_SIZE}-row chunks rather than
+     * one unbounded request. Used by screens that need the whole list at once (home preview,
+     * live display rotation). For the scrollable Events feed, use {@link #fetchApprovedEventsPage}.
+     */
     public void observeApprovedEvents(String userDept, MutableLiveData<List<Event>> liveData) {
+        Map<String, String> filter = approvedEventsFilter(userDept);
+        fetchAllPages(
+                (range, callback) -> enqueue(dataApi.getEvents(filter, range), callback),
+                new OnResult<List<Event>>() {
+                    @Override
+                    public void onSuccess(List<Event> body) {
+                        liveData.postValue(body);
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        liveData.postValue(null);
+                    }
+                });
+    }
+
+    /**
+     * Like {@link #observeApprovedEvents}, but for the campus-wide Live Display kiosk: every
+     * approved event regardless of visibility/department. The kiosk isn't scoped to any one
+     * department — each card's own department badge (BSIT/BTLED/EDUC) identifies what a
+     * department-only event is about, the same way a General one is labeled "General".
+     */
+    public void observeAllApprovedEvents(MutableLiveData<List<Event>> liveData) {
+        Map<String, String> filter = new HashMap<>();
+        filter.put("status", "eq." + Event.STATUS_APPROVED);
+        filter.put("order", "start_date.asc");
+        fetchAllPages(
+                (range, callback) -> enqueue(dataApi.getEvents(filter, range), callback),
+                new OnResult<List<Event>>() {
+                    @Override
+                    public void onSuccess(List<Event> body) {
+                        liveData.postValue(body);
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        liveData.postValue(null);
+                    }
+                });
+    }
+
+    /**
+     * Loads one {@code limit}-row page of approved events starting at {@code offset}, for
+     * infinite-scroll feeds, narrowed and ordered by {@code feed} on the server so filters and
+     * search reach past the loaded pages. Unlike {@link #observeApprovedEvents}, the caller
+     * decides when (or whether) to fetch the next page.
+     */
+    public void fetchApprovedEventsPage(String userDept, FeedFilter feed, int offset, int limit,
+                                         OnPageListener<Event> listener) {
+        Map<String, String> filter = approvedEventsFilter(userDept);
+        long now = System.currentTimeMillis();
+        List<String> timeframe = new ArrayList<>();
+        String order;
+        if (FeedFilter.TIME_UPCOMING.equals(feed.timeframe)) {
+            // Not ended yet. end_date is 0 when unset, so a future start also counts.
+            timeframe.add("or(end_date.gte." + now + ",start_date.gte." + now + ")");
+            order = "start_date.asc,id.asc";
+        } else if (FeedFilter.TIME_PAST.equals(feed.timeframe)) {
+            timeframe.add("or(end_date.lt." + now + ",end_date.is.null)");
+            timeframe.add("start_date.lt." + now);
+            order = "start_date.desc,id.desc";
+        } else {
+            order = "start_date.desc,id.desc";
+        }
+        applyFeedFilter(filter, feed, timeframe, "title", "what", "where_info", "author_name");
+        filter.put("order", order);
+        String range = offset + "-" + (offset + limit - 1);
+        enqueue(dataApi.getEvents(filter, range), new OnResult<List<Event>>() {
+            @Override
+            public void onSuccess(List<Event> body) {
+                listener.onLoaded(body != null ? body : new ArrayList<>());
+            }
+
+            @Override
+            public void onError(String message) {
+                listener.onError(message);
+            }
+        });
+    }
+
+    private Map<String, String> approvedEventsFilter(String userDept) {
         Map<String, String> filter = new HashMap<>();
         filter.put("status", "eq." + Event.STATUS_APPROVED);
         if (userDept != null && !userDept.isEmpty()) {
@@ -136,52 +225,47 @@ public class EventRepository extends BaseRepository {
         } else {
             filter.put("visibility", "eq.general");
         }
+        // Explicit order is required for chunk/page offsets to be stable across requests.
         filter.put("order", "start_date.asc");
-        enqueue(dataApi.getEvents(filter, null), new OnResult<List<Event>>() {
-            @Override
-            public void onSuccess(List<Event> body) {
-                liveData.postValue(body);
-            }
-
-            @Override
-            public void onError(String message) {
-                liveData.postValue(null);
-            }
-        });
+        return filter;
     }
 
     public void observePendingEvents(MutableLiveData<List<Event>> liveData) {
         Map<String, String> filter = new HashMap<>();
         filter.put("status", "eq." + Event.STATUS_PENDING);
         filter.put("order", "created_at.asc");
-        enqueue(dataApi.getEvents(filter, null), new OnResult<List<Event>>() {
-            @Override
-            public void onSuccess(List<Event> body) {
-                liveData.postValue(body);
-            }
+        fetchAllPages(
+                (range, callback) -> enqueue(dataApi.getEvents(filter, range), callback),
+                new OnResult<List<Event>>() {
+                    @Override
+                    public void onSuccess(List<Event> body) {
+                        liveData.postValue(body);
+                    }
 
-            @Override
-            public void onError(String message) {
-                liveData.postValue(null);
-            }
-        });
+                    @Override
+                    public void onError(String message) {
+                        liveData.postValue(null);
+                    }
+                });
     }
 
     public void observeUserEvents(String userId, MutableLiveData<List<Event>> liveData) {
         Map<String, String> filter = new HashMap<>();
         filter.put("author_id", "eq." + userId);
         filter.put("order", "created_at.desc");
-        enqueue(dataApi.getEvents(filter, null), new OnResult<List<Event>>() {
-            @Override
-            public void onSuccess(List<Event> body) {
-                liveData.postValue(body);
-            }
+        fetchAllPages(
+                (range, callback) -> enqueue(dataApi.getEvents(filter, range), callback),
+                new OnResult<List<Event>>() {
+                    @Override
+                    public void onSuccess(List<Event> body) {
+                        liveData.postValue(body);
+                    }
 
-            @Override
-            public void onError(String message) {
-                liveData.postValue(null);
-            }
-        });
+                    @Override
+                    public void onError(String message) {
+                        liveData.postValue(null);
+                    }
+                });
     }
 
     public void fetchEventById(String id, OnEventFetchedListener listener) {
@@ -207,17 +291,19 @@ public class EventRepository extends BaseRepository {
     public void observeAllEvents(MutableLiveData<List<Event>> liveData) {
         Map<String, String> filter = new HashMap<>();
         filter.put("order", "created_at.desc");
-        enqueue(dataApi.getEvents(filter, null), new OnResult<List<Event>>() {
-            @Override
-            public void onSuccess(List<Event> body) {
-                liveData.postValue(body);
-            }
+        fetchAllPages(
+                (range, callback) -> enqueue(dataApi.getEvents(filter, range), callback),
+                new OnResult<List<Event>>() {
+                    @Override
+                    public void onSuccess(List<Event> body) {
+                        liveData.postValue(body);
+                    }
 
-            @Override
-            public void onError(String message) {
-                liveData.postValue(null);
-            }
-        });
+                    @Override
+                    public void onError(String message) {
+                        liveData.postValue(null);
+                    }
+                });
     }
 
 

@@ -2,6 +2,7 @@ package com.campus.campusmate.repositories;
 
 import android.content.Context;
 
+import androidx.annotation.Nullable;
 import androidx.lifecycle.MutableLiveData;
 
 import com.campus.campusmate.api.SupabaseApi;
@@ -10,6 +11,7 @@ import com.campus.campusmate.api.dto.AuthRequest;
 import com.campus.campusmate.api.dto.AuthResponse;
 import com.campus.campusmate.api.dto.CreateAccountResponse;
 import com.campus.campusmate.api.dto.CreateDisplayAccountRequest;
+import com.campus.campusmate.api.dto.DeleteUserRequest;
 import com.campus.campusmate.api.dto.EmailRequest;
 import com.campus.campusmate.api.dto.SupabaseUser;
 import com.campus.campusmate.api.dto.UpdatePasswordRequest;
@@ -212,35 +214,23 @@ public class UserRepository extends BaseRepository {
     public void sendPasswordResetOtp(String email, OnCompleteListener listener) {
         String sanitizedEmail = InputSanitizer.sanitizeEmail(email);
 
-        // Verify this email actually belongs to a registered account before triggering
-        // Supabase Auth's recovery email, which otherwise silently no-ops (HTTP 200, no
-        // email sent) for any address with no matching auth.users row and would leave the
-        // UI falsely reporting "code sent".
-        Map<String, String> filter = new HashMap<>();
-        filter.put("email", "ilike." + sanitizedEmail);
-        dataApi.getUsers(filter).enqueue(new Callback<List<User>>() {
+        // No client-side "does this email exist" pre-check: public.users' RLS policy
+        // (users_select_self_or_admin) is scoped `to authenticated` only, so an anonymous
+        // pre-login request — which is exactly what this call is — always gets zero rows back
+        // regardless of whether the account exists, making that check permanently false-negative
+        // ("No account found") for every real user. Supabase's own /recover endpoint already
+        // no-ops safely (200, no email) for unregistered addresses, which is also the standard,
+        // enumeration-safe way to handle this: never reveal via the response whether an email
+        // is registered.
+        enqueue(authApi.recover(new EmailRequest(sanitizedEmail)), new OnResult<Void>() {
             @Override
-            public void onResponse(Call<List<User>> call, Response<List<User>> response) {
-                if (!response.isSuccessful() || response.body() == null || response.body().isEmpty()) {
-                    listener.onError("No account found with this email");
-                    return;
-                }
-                enqueue(authApi.recover(new EmailRequest(sanitizedEmail)), new OnResult<Void>() {
-                    @Override
-                    public void onSuccess(Void body) {
-                        listener.onSuccess();
-                    }
-
-                    @Override
-                    public void onError(String message) {
-                        listener.onError("Failed to send verification code");
-                    }
-                });
+            public void onSuccess(Void body) {
+                listener.onSuccess();
             }
 
             @Override
-            public void onFailure(Call<List<User>> call, Throwable t) {
-                listener.onError(t.getMessage());
+            public void onError(String message) {
+                listener.onError(message != null ? message : "Failed to send verification code");
             }
         });
     }
@@ -272,14 +262,24 @@ public class UserRepository extends BaseRepository {
         enqueue(authApi.updateUser(new UpdatePasswordRequest(newPassword)), new OnResult<SupabaseUser>() {
             @Override
             public void onSuccess(SupabaseUser body) {
+                // Only end the recovery session once the password actually changed — it's
+                // no longer needed, and shouldn't be left around to accidentally act as a
+                // logged-in session.
                 session.clearSession();
                 listener.onSuccess();
             }
 
             @Override
             public void onError(String message) {
-                session.clearSession();
-                listener.onError("Failed to reset password");
+                // Deliberately NOT clearing the session here: a rejection at this step is
+                // usually recoverable (e.g. Supabase's password policy, or "new password must
+                // differ from the old one"), and the user should be able to just try a
+                // different password from step 3. Clearing the recovery token on every failure
+                // meant the very next attempt always failed too — now with no valid session at
+                // all — showing the same generic error for a completely different reason and
+                // making the reset effectively impossible without restarting from step 1.
+                Timber.w("Password reset failed: %s", message);
+                listener.onError(message != null ? message : "Failed to reset password");
             }
         });
     }
@@ -338,6 +338,32 @@ public class UserRepository extends BaseRepository {
         fetchUserProfile(uid, new OnUserFetchedListener() {
             @Override public void onFetched(User user) { liveData.postValue(user); }
             @Override public void onError(String message) { liveData.postValue(null); }
+        });
+    }
+
+    /**
+     * Sets (or clears, when {@code url} is {@code null}) only the user's profile photo. Unlike
+     * {@link #updateUserProfile}, no other column is sent, so a stale cached profile can't
+     * overwrite newer changes (or trip the role/status privilege trigger).
+     */
+    public void updateProfileImageUrl(String uid, @Nullable String url, OnCompleteListener listener) {
+        Map<String, String> filter = new HashMap<>();
+        filter.put("uid", "eq." + uid);
+        Map<String, Object> fields = new HashMap<>();
+        // Empty string rather than null: the shared Gson instance drops null map values, which
+        // would turn a "remove photo" PATCH into a no-op.
+        fields.put("profile_image_url", url != null ? url : "");
+        fields.put("updated_at", System.currentTimeMillis());
+        enqueue(dataApi.patchUserMap(filter, fields, "return=minimal"), new OnResult<Void>() {
+            @Override
+            public void onSuccess(Void body) {
+                listener.onSuccess();
+            }
+
+            @Override
+            public void onError(String message) {
+                listener.onError(message);
+            }
         });
     }
 
@@ -436,36 +462,91 @@ public class UserRepository extends BaseRepository {
                 });
     }
 
+    // --- Admin: Delete user ---
+
+    /**
+     * Permanently deletes a user's account via the delete-user Edge Function, which removes
+     * their Supabase Auth login with the service-role key. The database then cascades the
+     * profile row and the announcements, events and notifications they own. The function
+     * refuses to delete the caller or any admin account, and writes the audit log itself.
+     */
+    public void deleteUser(String uid, OnCompleteListener listener) {
+        dataApi.deleteUser(new DeleteUserRequest(uid))
+                .enqueue(new Callback<CreateAccountResponse>() {
+                    @Override
+                    public void onResponse(Call<CreateAccountResponse> call, Response<CreateAccountResponse> response) {
+                        CreateAccountResponse body = response.body();
+                        if (response.isSuccessful() && body != null && body.success) {
+                            listener.onSuccess();
+                            return;
+                        }
+
+                        String message = "Failed to delete user";
+                        try {
+                            if (response.errorBody() != null) {
+                                String raw = response.errorBody().string();
+                                String parsed = new org.json.JSONObject(raw).optString("error", null);
+                                if (parsed != null && !parsed.isEmpty()) message = parsed;
+                            }
+                        } catch (Exception e) {
+                            Timber.e(e, "Failed to read delete-user error body");
+                        }
+                        if (response.code() == 404) {
+                            message = "Delete service isn't deployed (supabase/functions/delete-user)";
+                        }
+                        Timber.e("Delete user failed (" + response.code() + "): " + message);
+                        listener.onError(message);
+                    }
+
+                    @Override
+                    public void onFailure(Call<CreateAccountResponse> call, Throwable t) {
+                        listener.onError(t.getMessage());
+                    }
+                });
+    }
+
     // --- Admin: Fetch all users ---
 
+    /**
+     * Loads every user row, walked in {@link com.campus.campusmate.utils.Constants#BULK_FETCH_CHUNK_SIZE}
+     * chunks instead of one unbounded request — this feeds both the admin dashboard stat counts
+     * and the Users browse list, both of which need the complete set.
+     */
     public void fetchAllUsers(MutableLiveData<List<User>> liveData) {
-        enqueue(dataApi.getUsers(new HashMap<>()), new OnResult<List<User>>() {
-            @Override
-            public void onSuccess(List<User> body) {
-                liveData.postValue(body);
-            }
+        Map<String, String> filter = new HashMap<>();
+        filter.put("order", "created_at.asc");
+        fetchAllPages(
+                (range, callback) -> enqueue(dataApi.getUsersPaged(filter, range), callback),
+                new OnResult<List<User>>() {
+                    @Override
+                    public void onSuccess(List<User> body) {
+                        liveData.postValue(body);
+                    }
 
-            @Override
-            public void onError(String message) {
-                liveData.postValue(null);
-            }
-        });
+                    @Override
+                    public void onError(String message) {
+                        liveData.postValue(null);
+                    }
+                });
     }
 
     public void fetchPendingUsers(MutableLiveData<List<User>> liveData) {
         Map<String, String> filter = new HashMap<>();
         filter.put("status", "eq." + User.STATUS_PENDING);
-        enqueue(dataApi.getUsers(filter), new OnResult<List<User>>() {
-            @Override
-            public void onSuccess(List<User> body) {
-                liveData.postValue(body);
-            }
+        filter.put("order", "created_at.asc");
+        fetchAllPages(
+                (range, callback) -> enqueue(dataApi.getUsersPaged(filter, range), callback),
+                new OnResult<List<User>>() {
+                    @Override
+                    public void onSuccess(List<User> body) {
+                        liveData.postValue(body);
+                    }
 
-            @Override
-            public void onError(String message) {
-                liveData.postValue(null);
-            }
-        });
+                    @Override
+                    public void onError(String message) {
+                        liveData.postValue(null);
+                    }
+                });
     }
 
     // --- Audit ---

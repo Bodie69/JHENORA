@@ -4,6 +4,7 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -11,9 +12,12 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.campus.campusmate.R;
 import com.campus.campusmate.models.Announcement;
 import com.campus.campusmate.utils.DateUtils;
+import com.campus.campusmate.utils.Constants;
+import com.campus.campusmate.utils.DepartmentLogos;
 import com.campus.campusmate.utils.UiUtils;
 
 import java.util.ArrayList;
@@ -95,6 +99,7 @@ public class AnnouncementAdapter extends RecyclerView.Adapter<AnnouncementAdapte
         private final TextView tvStatus;
         private final TextView tvPreview;
         private final View priorityBar;
+        private final ImageView ivThumbnail;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -107,6 +112,7 @@ public class AnnouncementAdapter extends RecyclerView.Adapter<AnnouncementAdapte
             tvStatus = itemView.findViewById(R.id.tv_status);
             tvPreview = itemView.findViewById(R.id.tv_preview);
             priorityBar = itemView.findViewById(R.id.priority_bar);
+            ivThumbnail = itemView.findViewById(R.id.iv_thumbnail);
         }
 
         void bind(Announcement a) {
@@ -117,10 +123,10 @@ public class AnnouncementAdapter extends RecyclerView.Adapter<AnnouncementAdapte
 
             // Department tag
             if (tvDept != null) {
-                String dept = Announcement.VISIBILITY_GENERAL.equals(a.getVisibility())
-                        ? context.getString(R.string.label_general)
-                        : a.getDepartment();
+                boolean isGeneral = Announcement.VISIBILITY_GENERAL.equals(a.getVisibility());
+                String dept = isGeneral ? context.getString(R.string.label_general) : a.getDepartment();
                 tvDept.setText(dept != null ? dept : "");
+                DepartmentLogos.bind(tvDept, isGeneral ? Constants.DEPT_GENERAL : a.getDepartment());
             }
 
             // Priority badge
@@ -144,6 +150,15 @@ public class AnnouncementAdapter extends RecyclerView.Adapter<AnnouncementAdapte
                     priorityBar.setVisibility(View.VISIBLE);
                 } else {
                     priorityBar.setVisibility(View.INVISIBLE);
+                }
+            }
+
+            if (ivThumbnail != null) {
+                if (a.getImageUrl() != null && !a.getImageUrl().isEmpty()) {
+                    ivThumbnail.setVisibility(View.VISIBLE);
+                    Glide.with(context).load(a.getImageUrl()).centerCrop().into(ivThumbnail);
+                } else {
+                    ivThumbnail.setVisibility(View.GONE);
                 }
             }
 

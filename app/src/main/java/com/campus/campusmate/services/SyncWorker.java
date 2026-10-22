@@ -140,24 +140,29 @@ public class SyncWorker extends Worker {
         long lastCheck = prefs.getLong(KEY_USER_POSTS_LAST_SYNC, 0);
         long now = System.currentTimeMillis();
 
+        // First-ever run has nothing to compare against — recording the baseline here (rather
+        // than notifying about every already-resolved post the user has) mirrors how
+        // checkAnnouncements/checkEvents above treat their own first run.
+        boolean firstRun = lastCheck == 0;
+
         // 1. Check Announcements
         Map<String, String> aFilter = new HashMap<>();
         aFilter.put("author_id", "eq." + userId);
-        if (lastCheck > 0) {
+        if (!firstRun) {
             aFilter.put("updated_at", "gt." + lastCheck);
         }
-        
+
         Response<List<Announcement>> aResponse = SupabaseManager.getInstance(context)
                 .dataApi().getAnnouncements(aFilter, null).execute();
-        
-        if (aResponse.isSuccessful() && aResponse.body() != null) {
+
+        if (!firstRun && aResponse.isSuccessful() && aResponse.body() != null) {
             for (Announcement a : aResponse.body()) {
                 if (Announcement.STATUS_APPROVED.equals(a.getStatus())) {
-                    NotificationHelper.notifyPostApproved(context, "Announcement Approved", 
-                            "Your post \"" + a.getTitle() + "\" is now live.");
+                    NotificationHelper.notifyPostApproved(context, "Announcement Approved",
+                            "Your post \"" + a.getTitle() + "\" is now live.", a.getId());
                 } else if (Announcement.STATUS_REJECTED.equals(a.getStatus())) {
-                    NotificationHelper.notifyPostRejected(context, "Announcement Rejected", 
-                            "Your post \"" + a.getTitle() + "\" was not approved.");
+                    NotificationHelper.notifyPostRejected(context, "Announcement Rejected",
+                            "Your post \"" + a.getTitle() + "\" was not approved.", a.getId());
                 }
             }
         }
@@ -165,21 +170,21 @@ public class SyncWorker extends Worker {
         // 2. Check Events
         Map<String, String> eFilter = new HashMap<>();
         eFilter.put("author_id", "eq." + userId);
-        if (lastCheck > 0) {
+        if (!firstRun) {
             eFilter.put("updated_at", "gt." + lastCheck);
         }
 
         Response<List<Event>> eResponse = SupabaseManager.getInstance(context)
                 .dataApi().getEvents(eFilter, null).execute();
 
-        if (eResponse.isSuccessful() && eResponse.body() != null) {
+        if (!firstRun && eResponse.isSuccessful() && eResponse.body() != null) {
             for (Event e : eResponse.body()) {
                 if (Event.STATUS_APPROVED.equals(e.getStatus())) {
-                    NotificationHelper.notifyPostApproved(context, "Event Approved", 
-                            "Your event \"" + e.getTitle() + "\" is now live.");
+                    NotificationHelper.notifyPostApproved(context, "Event Approved",
+                            "Your event \"" + e.getTitle() + "\" is now live.", e.getId());
                 } else if (Event.STATUS_REJECTED.equals(e.getStatus())) {
-                    NotificationHelper.notifyPostRejected(context, "Event Rejected", 
-                            "Your event \"" + e.getTitle() + "\" was not approved.");
+                    NotificationHelper.notifyPostRejected(context, "Event Rejected",
+                            "Your event \"" + e.getTitle() + "\" was not approved.", e.getId());
                 }
             }
         }

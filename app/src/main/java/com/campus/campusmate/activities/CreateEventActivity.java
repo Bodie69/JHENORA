@@ -1,6 +1,5 @@
 package com.campus.campusmate.activities;
 
-import android.app.DatePickerDialog;
 import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -21,8 +20,12 @@ import com.campus.campusmate.utils.InputSanitizer;
 import com.campus.campusmate.utils.UiUtils;
 import com.campus.campusmate.utils.ValidationUtils;
 import com.campus.campusmate.viewmodels.EventViewModel;
+import com.google.android.material.datepicker.MaterialDatePicker;
+import com.google.android.material.timepicker.MaterialTimePicker;
+import com.google.android.material.timepicker.TimeFormat;
 
 import java.util.Calendar;
+import java.util.TimeZone;
 
 public class CreateEventActivity extends BaseActivity<ActivityCreateEventBinding> {
 
@@ -39,6 +42,7 @@ public class CreateEventActivity extends BaseActivity<ActivityCreateEventBinding
                     selectedImageUri = uri;
                     Glide.with(this).load(uri).centerCrop().into(binding.ivPreview);
                     binding.ivPreview.setVisibility(View.VISIBLE);
+                    binding.btnAddImage.setText(R.string.btn_change_image);
                 }
             });
 
@@ -68,19 +72,16 @@ public class CreateEventActivity extends BaseActivity<ActivityCreateEventBinding
         editingEvent = e;
         binding.etTitle.setText(e.getTitle());
         binding.etWhat.setText(e.getWhat());
-        binding.etWho.setText(e.getWho());
-        binding.etWhen.setText(e.getWhen());
         binding.etWhere.setText(e.getWhere());
-        binding.etWhy.setText(e.getWhy());
         binding.etRegistrationLink.setText(e.getRegistrationLink());
 
         if (e.getStartDate() > 0) {
             selectedStartDate = e.getStartDate();
-            binding.etStartDate.setText(DateUtils.formatDate(e.getStartDate()));
+            binding.etStartDate.setText(DateUtils.formatDateTime(e.getStartDate()));
         }
         if (e.getEndDate() > 0) {
             selectedEndDate = e.getEndDate();
-            binding.etEndDate.setText(DateUtils.formatDate(e.getEndDate()));
+            binding.etEndDate.setText(DateUtils.formatDateTime(e.getEndDate()));
         }
 
         boolean isDept = Event.VISIBILITY_DEPARTMENT.equals(e.getVisibility());
@@ -93,6 +94,7 @@ public class CreateEventActivity extends BaseActivity<ActivityCreateEventBinding
         if (e.getImageUrl() != null && !e.getImageUrl().isEmpty()) {
             Glide.with(this).load(e.getImageUrl()).centerCrop().into(binding.ivPreview);
             binding.ivPreview.setVisibility(View.VISIBLE);
+            binding.btnAddImage.setText(R.string.btn_change_image);
         }
     }
 
@@ -117,10 +119,12 @@ public class CreateEventActivity extends BaseActivity<ActivityCreateEventBinding
             binding.progressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
             binding.btnSubmit.setEnabled(!loading);
         });
-        viewModel.successMessage.observe(this, msg -> {
+        viewModel.successMessage.observe(this, msgEvent -> {
+            String msg = msgEvent != null ? msgEvent.getContentIfNotHandled() : null;
             if (msg != null) { UiUtils.showToast(this, msg); finish(); }
         });
-        viewModel.errorMessage.observe(this, msg -> {
+        viewModel.errorMessage.observe(this, msgEvent -> {
+            String msg = msgEvent != null ? msgEvent.getContentIfNotHandled() : null;
             if (msg != null) UiUtils.showSnackbar(binding.getRoot(), msg);
         });
         viewModel.loadedEvent.observe(this, e -> {
@@ -135,23 +139,50 @@ public class CreateEventActivity extends BaseActivity<ActivityCreateEventBinding
 
         binding.etStartDate.setOnClickListener(v -> showDatePicker(true));
         binding.etEndDate.setOnClickListener(v -> showDatePicker(false));
+        binding.tilStartDate.setEndIconOnClickListener(v -> showDatePicker(true));
+        binding.tilEndDate.setEndIconOnClickListener(v -> showDatePicker(false));
     }
 
+    /** Date step, then a time step for that date — combined into one timestamp so Start/End
+     *  carry a real time of day instead of always landing on midnight. */
     private void showDatePicker(boolean isStart) {
-        Calendar cal = Calendar.getInstance();
-        new DatePickerDialog(this, (view, year, month, day) -> {
-            Calendar picked = Calendar.getInstance();
-            picked.set(year, month, day, 0, 0, 0);
-            picked.set(Calendar.MILLISECOND, 0);
-            long timestamp = picked.getTimeInMillis();
-            if (isStart) {
-                selectedStartDate = timestamp;
-                binding.etStartDate.setText(DateUtils.formatDate(timestamp));
-            } else {
-                selectedEndDate = timestamp;
-                binding.etEndDate.setText(DateUtils.formatDate(timestamp));
-            }
-        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show();
+        long existing = isStart ? selectedStartDate : selectedEndDate;
+        MaterialDatePicker<Long> picker = MaterialDatePicker.Builder.datePicker()
+                .setTitleText(isStart ? getString(R.string.hint_start_date) : getString(R.string.hint_end_date))
+                .setSelection(existing > 0 ? existing : MaterialDatePicker.todayInUtcMilliseconds())
+                .build();
+        picker.addOnPositiveButtonClickListener(selectionUtc -> {
+            Calendar utc = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+            utc.setTimeInMillis(selectionUtc);
+
+            Calendar prior = Calendar.getInstance();
+            if (existing > 0) prior.setTimeInMillis(existing);
+            int hour = existing > 0 ? prior.get(Calendar.HOUR_OF_DAY) : 9;
+            int minute = existing > 0 ? prior.get(Calendar.MINUTE) : 0;
+
+            MaterialTimePicker timePicker = new MaterialTimePicker.Builder()
+                    .setTimeFormat(TimeFormat.CLOCK_12H)
+                    .setHour(hour)
+                    .setMinute(minute)
+                    .setTitleText(isStart ? getString(R.string.hint_start_date) : getString(R.string.hint_end_date))
+                    .build();
+            timePicker.addOnPositiveButtonClickListener(v -> {
+                Calendar local = Calendar.getInstance();
+                local.set(utc.get(Calendar.YEAR), utc.get(Calendar.MONTH), utc.get(Calendar.DAY_OF_MONTH),
+                        timePicker.getHour(), timePicker.getMinute(), 0);
+                local.set(Calendar.MILLISECOND, 0);
+                long timestamp = local.getTimeInMillis();
+                if (isStart) {
+                    selectedStartDate = timestamp;
+                    binding.etStartDate.setText(DateUtils.formatDateTime(timestamp));
+                } else {
+                    selectedEndDate = timestamp;
+                    binding.etEndDate.setText(DateUtils.formatDateTime(timestamp));
+                }
+            });
+            timePicker.show(getSupportFragmentManager(), isStart ? "start_time_picker" : "end_time_picker");
+        });
+        picker.show(getSupportFragmentManager(), isStart ? "start_date_picker" : "end_date_picker");
     }
 
     private void attemptSubmit() {
@@ -174,10 +205,7 @@ public class CreateEventActivity extends BaseActivity<ActivityCreateEventBinding
                 : new Event(title, session.getUserId(), session.getUserName(), session.getUserRole());
         e.setTitle(title);
         e.setWhat(what);
-        e.setWho(InputSanitizer.sanitize(binding.etWho.getText().toString()));
-        e.setWhen(InputSanitizer.sanitize(binding.etWhen.getText().toString()));
         e.setWhere(InputSanitizer.sanitize(binding.etWhere.getText().toString()));
-        e.setWhy(InputSanitizer.sanitize(binding.etWhy.getText().toString()));
         e.setRegistrationLink(InputSanitizer.sanitizeUrl(binding.etRegistrationLink.getText().toString()));
         e.setStartDate(selectedStartDate);
         e.setEndDate(selectedEndDate);

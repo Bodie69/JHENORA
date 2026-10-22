@@ -18,7 +18,9 @@ import com.campus.campusmate.activities.EventDetailActivity;
 import com.campus.campusmate.adapters.EventAdapter;
 import com.campus.campusmate.databinding.FragmentAdminContentBinding;
 import com.campus.campusmate.models.Event;
+import com.campus.campusmate.models.FeedFilter;
 import com.campus.campusmate.utils.Constants;
+import com.campus.campusmate.utils.PostFilters;
 import com.campus.campusmate.utils.SessionManager;
 import com.campus.campusmate.utils.UiUtils;
 import com.campus.campusmate.viewmodels.EventViewModel;
@@ -35,6 +37,13 @@ public class AdminEventsFragment extends Fragment {
     private SessionManager session;
     private List<Event> allItems = new ArrayList<>();
 
+    private static final String STATE_STATUS = "status_filter";
+    private static final String STATE_SCOPE = "scope_filter";
+    /** Required post status, or {@code null} for any. */
+    @Nullable private String statusFilter;
+    /** {@link FeedFilter#SCOPE_ALL}, {@link FeedFilter#SCOPE_GENERAL} or a department code. */
+    private String scopeFilter = FeedFilter.SCOPE_ALL;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -50,11 +59,28 @@ public class AdminEventsFragment extends Fragment {
         viewModel = new ViewModelProvider(requireActivity()).get(EventViewModel.class);
         session = new SessionManager(requireContext());
 
+        binding.etSearch.setHint("Search Events");
+
+        if (savedInstanceState != null) {
+            statusFilter = savedInstanceState.getString(STATE_STATUS);
+            scopeFilter = savedInstanceState.getString(STATE_SCOPE, FeedFilter.SCOPE_ALL);
+        }
+
         setupRecyclerView();
+        setupFilters();
         setupSearch();
         setupObservers();
 
         viewModel.loadAllEvents();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // This tab's ViewPager2 page is kept alive (not recreated) while another tab is
+        // shown, so without this, posts created/approved/deleted elsewhere would sit stale
+        // here until the app is force-restarted.
+        if (viewModel != null) viewModel.loadAllEvents();
     }
 
     private void setupRecyclerView() {
@@ -91,6 +117,44 @@ public class AdminEventsFragment extends Fragment {
                 .show();
     }
 
+    private void setupFilters() {
+        binding.chipStatusAll.setOnClickListener(v -> setStatusFilter(null));
+        binding.chipPending.setOnClickListener(v -> setStatusFilter(Event.STATUS_PENDING));
+        binding.chipApproved.setOnClickListener(v -> setStatusFilter(Event.STATUS_APPROVED));
+        binding.chipRejected.setOnClickListener(v -> setStatusFilter(Event.STATUS_REJECTED));
+        binding.chipScopeAll.setOnClickListener(v -> setScopeFilter(FeedFilter.SCOPE_ALL));
+        binding.chipGeneral.setOnClickListener(v -> setScopeFilter(FeedFilter.SCOPE_GENERAL));
+        binding.chipBsit.setOnClickListener(v -> setScopeFilter(Constants.DEPT_BSIT));
+        binding.chipBtled.setOnClickListener(v -> setScopeFilter(Constants.DEPT_BTLED));
+        binding.chipEduc.setOnClickListener(v -> setScopeFilter(Constants.DEPT_EDUC));
+        updateChipUI();
+    }
+
+    private void setStatusFilter(@Nullable String status) {
+        statusFilter = status;
+        updateChipUI();
+        filter(binding.etSearch.getText().toString());
+    }
+
+    private void setScopeFilter(String scope) {
+        scopeFilter = scope;
+        updateChipUI();
+        filter(binding.etSearch.getText().toString());
+    }
+
+    private void updateChipUI() {
+        // Non-checkable chips: selected state drives the colour and TalkBack's announcement.
+        binding.chipStatusAll.setSelected(statusFilter == null);
+        binding.chipPending.setSelected(Event.STATUS_PENDING.equals(statusFilter));
+        binding.chipApproved.setSelected(Event.STATUS_APPROVED.equals(statusFilter));
+        binding.chipRejected.setSelected(Event.STATUS_REJECTED.equals(statusFilter));
+        binding.chipScopeAll.setSelected(FeedFilter.SCOPE_ALL.equals(scopeFilter));
+        binding.chipGeneral.setSelected(FeedFilter.SCOPE_GENERAL.equals(scopeFilter));
+        binding.chipBsit.setSelected(Constants.DEPT_BSIT.equals(scopeFilter));
+        binding.chipBtled.setSelected(Constants.DEPT_BTLED.equals(scopeFilter));
+        binding.chipEduc.setSelected(Constants.DEPT_EDUC.equals(scopeFilter));
+    }
+
     private void setupSearch() {
         binding.ivSearch.setOnClickListener(v -> {
             binding.etSearch.requestFocus();
@@ -124,22 +188,24 @@ public class AdminEventsFragment extends Fragment {
     }
 
     private void filter(String query) {
-        if (query.isEmpty()) {
-            adapter.submitList(allItems);
-            binding.tvEmpty.setVisibility(allItems.isEmpty() ? View.VISIBLE : View.GONE);
-            return;
-        }
-
         List<Event> filtered = new ArrayList<>();
-        String q = query.toLowerCase().trim();
         for (Event e : allItems) {
-            if ((e.getTitle() != null && e.getTitle().toLowerCase().contains(q))
-                    || (e.getAuthorName() != null && e.getAuthorName().toLowerCase().contains(q))) {
+            if (PostFilters.matches(e.getStatus(), e.getVisibility(), e.getDepartment(),
+                    statusFilter, scopeFilter)
+                    && PostFilters.matchesQuery(query, e.getTitle(), e.getAuthorName(),
+                    e.getWhat(), e.getWhere(), e.getDepartment())) {
                 filtered.add(e);
             }
         }
         adapter.submitList(filtered);
         binding.tvEmpty.setVisibility(filtered.isEmpty() ? View.VISIBLE : View.GONE);
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putString(STATE_STATUS, statusFilter);
+        outState.putString(STATE_SCOPE, scopeFilter);
     }
 
     @Override
