@@ -55,10 +55,12 @@ iOS Human Interface Guidelines inspired.
 ## User Roles & Permissions
 
 - **admin**: Dashboard, full CRUD, approve/reject posts, manage departments/organizations/users, verify faculty, assign org leaders, manage live display, analytics, send notifications, monitor activities.
-- **faculty**: Create/edit/delete own announcements & events, view profile, receive updates, view post history. New faculty accounts start as **pending verification**.
+- **faculty**: Create/edit/delete own announcements & events, view profile, receive updates, view post history.
 - **organization**: Create/edit/delete own announcements & events, receive updates.
 - **student**: Read announcements/events, calendar, search, filter, receive notifications, profile.
 - **live_display**: Dedicated read-only account for campus live signage — displays approved announcements/events, auto-refreshes.
+
+All new accounts, whatever the role, start as **pending verification** until an admin approves them.
 
 ## Departments
 
@@ -71,8 +73,9 @@ Welcome (splash/intro/login/register) · Home (feed + quick access) · Announcem
 ## Auth & Registration
 
 - Login: email + password
-- Faculty registration fields: firstname, middlename, lastname, email, password, department, role (Faculty), profession → status starts as **pending verification**
+- Faculty registration fields: firstname, middlename, lastname, email, password, department, role (Faculty), profession
 - Student registration fields: firstname, middlename, lastname, email, password, department, address, block, year
+- Every new registration starts with status **pending verification**
 
 ## Content Forms
 
