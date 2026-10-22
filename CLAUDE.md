@@ -86,7 +86,7 @@ Analytics, User Verification, Department Management, Organization Management, Fa
 
 ## Database Tables
 
-`users`, `departments`, `organizations`, `announcements`, `events`, `notifications`, `verification_requests`, `post_approvals`, `audit_logs`, `display_accounts`
+`users`, `departments`, `organizations`, `announcements`, `events`, `notifications`, `audit_logs`
 
 ## Security
 
