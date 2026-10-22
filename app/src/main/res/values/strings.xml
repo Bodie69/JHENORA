@@ -75,6 +75,7 @@
     <string name="filter_admins">Admins</string>
     <string name="filter_display">Display</string>
     <string name="no_results">No matches. Try a different filter or search.</string>
+    <string name="offline_showing_saved">You\'re offline. Showing saved posts.</string>
     <string name="label_priority">Priority</string>
     <string name="label_category">Category</string>
     <string name="label_visibility">Visibility</string>

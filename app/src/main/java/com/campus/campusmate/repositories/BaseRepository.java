@@ -5,6 +5,7 @@ import android.text.TextUtils;
 
 import com.campus.campusmate.api.SupabaseApi;
 import com.campus.campusmate.api.SupabaseAuthApi;
+import com.campus.campusmate.database.OfflineCache;
 import com.campus.campusmate.models.AuditLog;
 import com.campus.campusmate.models.FeedFilter;
 import com.campus.campusmate.utils.Constants;
@@ -13,6 +14,7 @@ import com.campus.campusmate.utils.SupabaseManager;
 
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -32,12 +34,15 @@ public abstract class BaseRepository {
     protected SupabaseAuthApi authApi;
     protected SupabaseApi dataApi;
     protected SessionManager session;
+    /** Saved copy of approved posts, read back when a request fails (see {@link OfflineCache}). */
+    protected OfflineCache cache;
 
     public void init(Context context) {
         SupabaseManager manager = SupabaseManager.getInstance(context);
         authApi = manager.authApi();
         dataApi = manager.dataApi();
         session = new SessionManager(context);
+        cache = OfflineCache.getInstance(context);
     }
 
     /**
@@ -169,6 +174,14 @@ public abstract class BaseRepository {
     public interface OnPageListener<T> {
         void onLoaded(List<T> page);
         void onError(String message);
+
+        /**
+         * The server couldn't be reached, so {@code items} is the whole matching saved copy
+         * instead of one page: there is nothing more to page through until a reload succeeds.
+         */
+        default void onLoadedFromCache(List<T> items) {
+            onLoaded(items);
+        }
     }
 
     /**
@@ -196,6 +209,29 @@ public abstract class BaseRepository {
      */
     protected <T> void fetchAllPages(PageFetcher<T> fetcher, OnResult<List<T>> onComplete) {
         fetchNextChunk(fetcher, 0, new ArrayList<>(), onComplete);
+    }
+
+    /** Returns the Retrofit call for one Range-header'd chunk; see {@link #fetchAllPagesNow}. */
+    protected interface ChunkCall<T> {
+        Call<List<T>> forRange(String range);
+    }
+
+    /**
+     * Blocking counterpart of {@link #fetchAllPages} for background workers. Unlike it, this
+     * fails if any chunk fails, so a caller replacing saved data never acts on a partial list.
+     *
+     * @throws IOException if the request can't be sent or any chunk is rejected
+     */
+    protected <T> List<T> fetchAllPagesNow(ChunkCall<T> chunkCall) throws IOException {
+        int chunkSize = Constants.BULK_FETCH_CHUNK_SIZE;
+        List<T> all = new ArrayList<>();
+        for (int offset = 0; ; offset += chunkSize) {
+            Response<List<T>> response = chunkCall.forRange(offset + "-" + (offset + chunkSize - 1)).execute();
+            if (!response.isSuccessful()) throw new IOException(extractErrorMessage(response));
+            List<T> page = response.body();
+            if (page != null) all.addAll(page);
+            if (page == null || page.size() < chunkSize) return all;
+        }
     }
 
     private <T> void fetchNextChunk(PageFetcher<T> fetcher, int offset, List<T> accumulated,

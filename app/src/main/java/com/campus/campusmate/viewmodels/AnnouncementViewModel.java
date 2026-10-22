@@ -31,6 +31,8 @@ public class AnnouncementViewModel extends BaseViewModel {
 
     /** Whether a next-page fetch for {@link #announcements} is in flight (feed footer spinner). */
     public final MutableLiveData<Boolean> isLoadingMore = new MutableLiveData<>(false);
+    /** True while {@link #announcements} is the saved offline copy because the server was unreachable. */
+    public final MutableLiveData<Boolean> isShowingSaved = new MutableLiveData<>(false);
 
     private String feedDept;
     private int feedOffset = 0;
@@ -124,7 +126,18 @@ public class AnnouncementViewModel extends BaseViewModel {
                 feedFetching = false;
                 feedOffset = page.size();
                 feedHasMore = page.size() == Constants.PAGE_SIZE;
+                isShowingSaved.postValue(false);
                 announcements.postValue(page);
+            }
+
+            @Override
+            public void onLoadedFromCache(List<Announcement> items) {
+                if (generation != feedGeneration) return;
+                feedFetching = false;
+                feedOffset = items.size();
+                feedHasMore = false;
+                isShowingSaved.postValue(true);
+                announcements.postValue(items);
             }
 
             @Override

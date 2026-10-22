@@ -7,13 +7,20 @@ import androidx.lifecycle.MutableLiveData;
 import com.campus.campusmate.models.AuditLog;
 import com.campus.campusmate.models.Event;
 import com.campus.campusmate.models.FeedFilter;
+import com.campus.campusmate.utils.PostFilters;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Repository class responsible for managing Event data via the Supabase API. Approved events it
+ * fetches are saved to the {@link #cache}, and the reads behind the Events, Home, Calendar and
+ * detail screens fall back to that copy when offline.
+ */
 public class EventRepository extends BaseRepository {
 
     private static EventRepository instance;
@@ -56,6 +63,7 @@ public class EventRepository extends BaseRepository {
         enqueue(dataApi.patchEvent(filter, fields, "return=minimal"), new OnResult<Void>() {
             @Override
             public void onSuccess(Void body) {
+                cache.updateEvent(event);
                 listener.onSuccess(event.getId());
             }
 
@@ -74,6 +82,7 @@ public class EventRepository extends BaseRepository {
             public void onSuccess(Void body) {
                 logAudit(userId, userName, AuditLog.ACTION_DELETE,
                         AuditLog.TARGET_EVENT, id, "Event deleted");
+                cache.removeEvent(id);
                 listener.onSuccess();
             }
 
@@ -120,6 +129,7 @@ public class EventRepository extends BaseRepository {
             public void onSuccess(Void body) {
                 logAudit(adminId, adminName, AuditLog.ACTION_REJECT,
                         AuditLog.TARGET_EVENT, id, "Event rejected: " + reason);
+                cache.removeEvent(id);
                 listener.onSuccess();
             }
 
@@ -140,17 +150,7 @@ public class EventRepository extends BaseRepository {
         Map<String, String> filter = approvedEventsFilter(userDept);
         fetchAllPages(
                 (range, callback) -> enqueue(dataApi.getEvents(filter, range), callback),
-                new OnResult<List<Event>>() {
-                    @Override
-                    public void onSuccess(List<Event> body) {
-                        liveData.postValue(body);
-                    }
-
-                    @Override
-                    public void onError(String message) {
-                        liveData.postValue(null);
-                    }
-                });
+                cachingResult(liveData, userDept, false));
     }
 
     /**
@@ -160,22 +160,51 @@ public class EventRepository extends BaseRepository {
      * department-only event is about, the same way a General one is labeled "General".
      */
     public void observeAllApprovedEvents(MutableLiveData<List<Event>> liveData) {
+        Map<String, String> filter = allApprovedEventsFilter();
+        fetchAllPages(
+                (range, callback) -> enqueue(dataApi.getEvents(filter, range), callback),
+                cachingResult(liveData, null, true));
+    }
+
+    /**
+     * Posts a complete approved list to {@code liveData}, saving it for offline use; if the
+     * request fails, posts the saved copy instead, or {@code null} when nothing is saved.
+     */
+    private OnResult<List<Event>> cachingResult(MutableLiveData<List<Event>> liveData,
+            String userDept, boolean everyDepartment) {
+        return new OnResult<List<Event>>() {
+            @Override
+            public void onSuccess(List<Event> body) {
+                cache.saveEvents(body);
+                liveData.postValue(body);
+            }
+
+            @Override
+            public void onError(String message) {
+                cache.loadEvents(userDept, everyDepartment,
+                        saved -> liveData.postValue(saved.isEmpty() ? null : saved));
+            }
+        };
+    }
+
+    /**
+     * Replaces the offline copy with the full current set: what {@code userDept} can see, or
+     * every approved event for the Live Display ({@code everyDepartment}). Blocks; for
+     * background workers. Also drops saved events deleted or unpublished meanwhile.
+     *
+     * @throws IOException if any part of the set can't be fetched (the copy is left as it was)
+     */
+    public void syncOfflineCacheNow(String userDept, boolean everyDepartment) throws IOException {
+        Map<String, String> filter = everyDepartment
+                ? allApprovedEventsFilter() : approvedEventsFilter(userDept);
+        cache.replaceEventsNow(fetchAllPagesNow(range -> dataApi.getEvents(filter, range)));
+    }
+
+    private Map<String, String> allApprovedEventsFilter() {
         Map<String, String> filter = new HashMap<>();
         filter.put("status", "eq." + Event.STATUS_APPROVED);
         filter.put("order", "start_date.asc");
-        fetchAllPages(
-                (range, callback) -> enqueue(dataApi.getEvents(filter, range), callback),
-                new OnResult<List<Event>>() {
-                    @Override
-                    public void onSuccess(List<Event> body) {
-                        liveData.postValue(body);
-                    }
-
-                    @Override
-                    public void onError(String message) {
-                        liveData.postValue(null);
-                    }
-                });
+        return filter;
     }
 
     /**
@@ -207,12 +236,24 @@ public class EventRepository extends BaseRepository {
         enqueue(dataApi.getEvents(filter, range), new OnResult<List<Event>>() {
             @Override
             public void onSuccess(List<Event> body) {
+                cache.saveEvents(body);
                 listener.onLoaded(body != null ? body : new ArrayList<>());
             }
 
             @Override
             public void onError(String message) {
-                listener.onError(message);
+                // Offline, the first page is replaced by every saved match; later pages just fail.
+                if (offset > 0) {
+                    listener.onError(message);
+                    return;
+                }
+                cache.loadEvents(userDept, false, saved -> {
+                    if (saved.isEmpty()) {
+                        listener.onError(message);
+                    } else {
+                        listener.onLoadedFromCache(PostFilters.filterEventFeed(saved, feed, System.currentTimeMillis()));
+                    }
+                });
             }
         });
     }
@@ -275,15 +316,23 @@ public class EventRepository extends BaseRepository {
             @Override
             public void onSuccess(List<Event> body) {
                 if (body != null && !body.isEmpty()) {
+                    cache.updateEvent(body.get(0));
                     listener.onFetched(body.get(0));
                 } else {
+                    cache.removeEvent(id);
                     listener.onFetched(null);
                 }
             }
 
             @Override
             public void onError(String message) {
-                listener.onError(message);
+                cache.findEvent(id, saved -> {
+                    if (saved != null) {
+                        listener.onFetched(saved);
+                    } else {
+                        listener.onError(message);
+                    }
+                });
             }
         });
     }

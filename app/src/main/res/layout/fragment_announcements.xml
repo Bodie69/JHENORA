@@ -142,6 +142,20 @@
 
     </HorizontalScrollView>
 
+    <!-- Shown while the list below is the saved offline copy -->
+    <TextView
+        android:id="@+id/tv_offline_banner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/warning_light"
+        android:gravity="center"
+        android:paddingHorizontal="@dimen/spacing_base"
+        android:paddingVertical="8dp"
+        android:text="@string/offline_showing_saved"
+        android:textColor="@color/m3_on_surface"
+        android:textSize="@dimen/text_sm"
+        android:visibility="gone" />
+
     <!-- Content (FrameLayout lets the FAB float over the list rather than sit inline) -->
     <FrameLayout
         android:layout_width="match_parent"

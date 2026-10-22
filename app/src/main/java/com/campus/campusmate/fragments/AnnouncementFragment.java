@@ -20,6 +20,7 @@ import com.campus.campusmate.databinding.FragmentAnnouncementsBinding;
 import com.campus.campusmate.models.Announcement;
 import com.campus.campusmate.models.FeedFilter;
 import com.campus.campusmate.utils.Constants;
+import com.campus.campusmate.utils.NetworkMonitor;
 import com.campus.campusmate.utils.SessionManager;
 import com.campus.campusmate.utils.UiUtils;
 import com.campus.campusmate.viewmodels.AnnouncementViewModel;
@@ -224,6 +225,14 @@ public class AnnouncementFragment extends BaseFragment<FragmentAnnouncementsBind
         });
         viewModel.isLoadingMore.observe(getViewLifecycleOwner(), loading ->
                 binding.progressLoadMore.setVisibility(Boolean.TRUE.equals(loading) ? View.VISIBLE : View.GONE));
+        viewModel.isShowingSaved.observe(getViewLifecycleOwner(), saved ->
+                binding.tvOfflineBanner.setVisibility(Boolean.TRUE.equals(saved) ? View.VISIBLE : View.GONE));
+        // Swap the saved copy for live posts as soon as the connection is back.
+        NetworkMonitor.getInstance(requireContext()).isOnline().observe(getViewLifecycleOwner(), online -> {
+            if (Boolean.TRUE.equals(online) && Boolean.TRUE.equals(viewModel.isShowingSaved.getValue())) {
+                reloadFeed();
+            }
+        });
     }
 
     private void refreshList() {

@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import androidx.security.crypto.EncryptedSharedPreferences;
 import androidx.security.crypto.MasterKey;
 
+import com.campus.campusmate.database.OfflineCache;
 import com.campus.campusmate.models.User;
 
 import java.io.IOException;
@@ -19,6 +20,7 @@ import timber.log.Timber;
  */
 public class SessionManager {
 
+    private final Context appContext;
     private SharedPreferences prefs;
 
     /**
@@ -27,6 +29,7 @@ public class SessionManager {
      * @param context The application context.
      */
     public SessionManager(Context context) {
+        appContext = context.getApplicationContext();
         try {
             MasterKey masterKey = new MasterKey.Builder(context)
                     .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -108,7 +111,8 @@ public class SessionManager {
     }
 
     /**
-     * Clears the current user session data from SharedPreferences.
+     * Clears the current user session data from SharedPreferences, and the offline copy of
+     * posts, which holds the signed-out user's department posts.
      * If "Remember Me" is enabled, it preserves the email and preference.
      */
     public void clearSession() {
@@ -121,6 +125,7 @@ public class SessionManager {
             editor.putString(Constants.PREF_USER_EMAIL, email);
         }
         editor.apply();
+        OfflineCache.getInstance(appContext).clear();
     }
 
     /**

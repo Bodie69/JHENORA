@@ -35,6 +35,8 @@ public class EventViewModel extends BaseViewModel {
     /** Infinite-scroll feed backing the Events tab list; see {@link #loadEventsFeed}. */
     public final MutableLiveData<List<Event>> eventsFeed = new MutableLiveData<>(new ArrayList<>());
     public final MutableLiveData<Boolean> isLoadingMoreEvents = new MutableLiveData<>(false);
+    /** True while {@link #eventsFeed} is the saved offline copy because the server was unreachable. */
+    public final MutableLiveData<Boolean> isShowingSaved = new MutableLiveData<>(false);
 
     private String feedDept;
     private int feedOffset = 0;
@@ -133,7 +135,18 @@ public class EventViewModel extends BaseViewModel {
                 feedFetching = false;
                 feedOffset = page.size();
                 feedHasMore = page.size() == Constants.PAGE_SIZE;
+                isShowingSaved.postValue(false);
                 eventsFeed.postValue(page);
+            }
+
+            @Override
+            public void onLoadedFromCache(List<Event> items) {
+                if (generation != feedGeneration) return;
+                feedFetching = false;
+                feedOffset = items.size();
+                feedHasMore = false;
+                isShowingSaved.postValue(true);
+                eventsFeed.postValue(items);
             }
 
             @Override

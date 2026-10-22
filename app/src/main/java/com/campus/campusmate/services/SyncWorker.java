@@ -10,6 +10,8 @@ import androidx.work.WorkerParameters;
 import com.campus.campusmate.models.Announcement;
 import com.campus.campusmate.models.Event;
 import com.campus.campusmate.notifications.NotificationHelper;
+import com.campus.campusmate.repositories.AnnouncementRepository;
+import com.campus.campusmate.repositories.EventRepository;
 import com.campus.campusmate.utils.SessionManager;
 import com.campus.campusmate.utils.SupabaseManager;
 
@@ -55,12 +57,26 @@ public class SyncWorker extends Worker {
             if (session.isAdmin()) {
                 checkPendingApprovals(context, prefs);
             }
+
+            refreshOfflineCache(session);
             
             return Result.success();
         } catch (Exception e) {
             Timber.e(e, "Sync error");
             return Result.retry();
         }
+    }
+
+    /**
+     * Replaces the offline copy of announcements and events with the current server set, so
+     * the next time the device is offline it shows up-to-date posts. The Live Display kiosk
+     * keeps every approved post; other users keep what their department can see.
+     */
+    private void refreshOfflineCache(SessionManager session) throws Exception {
+        boolean everyDepartment = session.isLiveDisplay();
+        String dept = session.getUserDepartment();
+        AnnouncementRepository.getInstance().syncOfflineCacheNow(dept, everyDepartment);
+        EventRepository.getInstance().syncOfflineCacheNow(dept, everyDepartment);
     }
 
     private void checkAnnouncements(Context context, SessionManager session, SharedPreferences prefs)

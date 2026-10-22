@@ -8,7 +8,9 @@ import com.campus.campusmate.models.Announcement;
 import com.campus.campusmate.models.AuditLog;
 import com.campus.campusmate.models.FeedFilter;
 import com.campus.campusmate.utils.Constants;
+import com.campus.campusmate.utils.PostFilters;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -18,6 +20,8 @@ import java.util.UUID;
 /**
  * Repository class responsible for managing Announcement data.
  * Handles fetching, creating, updating, approving, and rejecting announcements via Supabase API.
+ * Approved announcements it fetches are saved to the {@link #cache}, and the reads behind the
+ * Announcements, Home, Calendar and detail screens fall back to that copy when offline.
  */
 public class AnnouncementRepository extends BaseRepository {
 
@@ -64,6 +68,7 @@ public class AnnouncementRepository extends BaseRepository {
         enqueue(dataApi.patchAnnouncement(filter, fields, "return=minimal"), new OnResult<Void>() {
             @Override
             public void onSuccess(Void body) {
+                cache.updateAnnouncement(announcement);
                 listener.onSuccess(announcement.getId());
             }
 
@@ -82,6 +87,7 @@ public class AnnouncementRepository extends BaseRepository {
             public void onSuccess(Void body) {
                 logAudit(userId, userName, AuditLog.ACTION_DELETE,
                         AuditLog.TARGET_ANNOUNCEMENT, id, "Announcement deleted");
+                cache.removeAnnouncement(id);
                 listener.onSuccess();
             }
 
@@ -128,6 +134,7 @@ public class AnnouncementRepository extends BaseRepository {
             public void onSuccess(Void body) {
                 logAudit(adminId, adminName, AuditLog.ACTION_REJECT,
                         AuditLog.TARGET_ANNOUNCEMENT, id, "Announcement rejected: " + reason);
+                cache.removeAnnouncement(id);
                 listener.onSuccess();
             }
 
@@ -150,17 +157,7 @@ public class AnnouncementRepository extends BaseRepository {
         Map<String, String> filter = approvedAnnouncementsFilter(userDept);
         fetchAllPages(
                 (range, callback) -> enqueue(dataApi.getAnnouncements(filter, range), callback),
-                new OnResult<List<Announcement>>() {
-                    @Override
-                    public void onSuccess(List<Announcement> body) {
-                        liveData.postValue(body);
-                    }
-
-                    @Override
-                    public void onError(String message) {
-                        liveData.postValue(null);
-                    }
-                });
+                cachingResult(liveData, userDept, false));
     }
 
     /**
@@ -170,22 +167,51 @@ public class AnnouncementRepository extends BaseRepository {
      * what a department-only post is about, the same way a General one is labeled "General".
      */
     public void observeAllApprovedAnnouncements(MutableLiveData<List<Announcement>> liveData) {
+        Map<String, String> filter = allApprovedAnnouncementsFilter();
+        fetchAllPages(
+                (range, callback) -> enqueue(dataApi.getAnnouncements(filter, range), callback),
+                cachingResult(liveData, null, true));
+    }
+
+    /**
+     * Posts a complete approved list to {@code liveData}, saving it for offline use; if the
+     * request fails, posts the saved copy instead, or {@code null} when nothing is saved.
+     */
+    private OnResult<List<Announcement>> cachingResult(MutableLiveData<List<Announcement>> liveData,
+            String userDept, boolean everyDepartment) {
+        return new OnResult<List<Announcement>>() {
+            @Override
+            public void onSuccess(List<Announcement> body) {
+                cache.saveAnnouncements(body);
+                liveData.postValue(body);
+            }
+
+            @Override
+            public void onError(String message) {
+                cache.loadAnnouncements(userDept, everyDepartment,
+                        saved -> liveData.postValue(saved.isEmpty() ? null : saved));
+            }
+        };
+    }
+
+    /**
+     * Replaces the offline copy with the full current set: what {@code userDept} can see, or
+     * every approved announcement for the Live Display ({@code everyDepartment}). Blocks; for
+     * background workers. Also drops saved announcements deleted or unpublished meanwhile.
+     *
+     * @throws IOException if any part of the set can't be fetched (the copy is left as it was)
+     */
+    public void syncOfflineCacheNow(String userDept, boolean everyDepartment) throws IOException {
+        Map<String, String> filter = everyDepartment
+                ? allApprovedAnnouncementsFilter() : approvedAnnouncementsFilter(userDept);
+        cache.replaceAnnouncementsNow(fetchAllPagesNow(range -> dataApi.getAnnouncements(filter, range)));
+    }
+
+    private Map<String, String> allApprovedAnnouncementsFilter() {
         Map<String, String> filter = new HashMap<>();
         filter.put("status", "eq." + Announcement.STATUS_APPROVED);
         filter.put("order", "created_at.desc");
-        fetchAllPages(
-                (range, callback) -> enqueue(dataApi.getAnnouncements(filter, range), callback),
-                new OnResult<List<Announcement>>() {
-                    @Override
-                    public void onSuccess(List<Announcement> body) {
-                        liveData.postValue(body);
-                    }
-
-                    @Override
-                    public void onError(String message) {
-                        liveData.postValue(null);
-                    }
-                });
+        return filter;
     }
 
     /**
@@ -207,12 +233,24 @@ public class AnnouncementRepository extends BaseRepository {
         enqueue(dataApi.getAnnouncements(filter, range), new OnResult<List<Announcement>>() {
             @Override
             public void onSuccess(List<Announcement> body) {
+                cache.saveAnnouncements(body);
                 listener.onLoaded(body != null ? body : new java.util.ArrayList<>());
             }
 
             @Override
             public void onError(String message) {
-                listener.onError(message);
+                // Offline, the first page is replaced by every saved match; later pages just fail.
+                if (offset > 0) {
+                    listener.onError(message);
+                    return;
+                }
+                cache.loadAnnouncements(userDept, false, saved -> {
+                    if (saved.isEmpty()) {
+                        listener.onError(message);
+                    } else {
+                        listener.onLoadedFromCache(PostFilters.filterAnnouncementFeed(saved, feed));
+                    }
+                });
             }
         });
     }
@@ -293,15 +331,23 @@ public class AnnouncementRepository extends BaseRepository {
             @Override
             public void onSuccess(List<Announcement> body) {
                 if (body != null && !body.isEmpty()) {
+                    cache.updateAnnouncement(body.get(0));
                     listener.onFetched(body.get(0));
                 } else {
+                    cache.removeAnnouncement(id);
                     listener.onFetched(null);
                 }
             }
 
             @Override
             public void onError(String message) {
-                listener.onError(message);
+                cache.findAnnouncement(id, saved -> {
+                    if (saved != null) {
+                        listener.onFetched(saved);
+                    } else {
+                        listener.onError(message);
+                    }
+                });
             }
         });
     }
