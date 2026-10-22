@@ -4,6 +4,22 @@ An Android app for **Romblon State University** that brings campus announcements
 
 Built in Java with Android Studio, backed by [Supabase](https://supabase.com), with a clean iOS-inspired "White Paper" design.
 
+## The name
+
+**JHENORA** stands for **J**oint **H**ub for **E**vents, **N**otifications, and **O**fficial **R**eal-time **A**nnouncements.
+
+The name works on two levels. It is built from letters of the development team's names, and each letter also stands for part of what the research set out to build:
+
+| Letter | Stands for | What it means in the app |
+|---|---|---|
+| **J** | Joint | One place shared by students, faculty, organizations and admins, across every department |
+| **H** | Hub | A single source for campus information, replacing scattered posts and group chats |
+| **E** | Events | Campus events with dates, posters, registration links and a calendar view |
+| **N** | Notifications | Alerts that reach users as soon as something new is posted or approved |
+| **O** | Official | Verified accounts and admin-approved posts, so what users read can be trusted |
+| **R** | Real-time | Updates delivered live, with offline access when the connection drops |
+| **A** | Announcements | University and department announcements, with priority levels and search |
+
 ## Features
 
 - **Announcements**: a searchable, filterable feed with department tabs, priorities, attachments and bookmarks.
