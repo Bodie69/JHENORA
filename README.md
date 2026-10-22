@@ -8,7 +8,7 @@ Built in Java with Android Studio, backed by [Supabase](https://supabase.com), w
 
 **JHENORA** stands for **J**oint **H**ub for **E**vents, **N**otifications, and **O**fficial **R**eal-time **A**nnouncements.
 
-The name works on two levels. It is built from letters of the development team's names, and each letter also stands for part of what the research set out to build:
+The name works on two levels. It is built from letters of the team members' names, and each letter also stands for part of what the research set out to build:
 
 | Letter | Stands for | What it means in the app |
 |---|---|---|
